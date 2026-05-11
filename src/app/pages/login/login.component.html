@@ -1,0 +1,126 @@
+<div class="auth-wrapper">
+
+  <!-- Connexion -->
+  <div class="auth-card">
+    <h2 class="auth-title">Connexion</h2>
+    <p class="auth-subtitle">Accédez à votre espace membre</p>
+
+    <div class="form-group">
+      <label class="form-label" for="login-email">Email</label>
+      <input
+        id="login-email"
+        type="email"
+        class="form-input"
+        [(ngModel)]="loginEmail"
+        placeholder="votre@email.fr"
+        autocomplete="email"
+      />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="login-password">Mot de passe</label>
+      <input
+        id="login-password"
+        type="password"
+        class="form-input"
+        [(ngModel)]="loginPassword"
+        placeholder="••••••••"
+        autocomplete="current-password"
+      />
+    </div>
+
+    <div class="form-error" *ngIf="loginError">{{ loginError }}</div>
+
+    <button class="btn-primary btn-full" (click)="onLogin()">
+      Connexion
+    </button>
+  </div>
+
+  <div class="auth-divider">
+    <span>ou</span>
+  </div>
+
+  <!-- Inscription -->
+  <div class="auth-card">
+    <h2 class="auth-title">S'inscrire</h2>
+    <p class="auth-subtitle">Créez votre compte gratuitement</p>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="reg-nom">Nom <span class="required">*</span></label>
+        <input
+          id="reg-nom"
+          type="text"
+          class="form-input"
+          [(ngModel)]="registerNom"
+          placeholder="Dupont"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="reg-prenom">Prénom <span class="required">*</span></label>
+        <input
+          id="reg-prenom"
+          type="text"
+          class="form-input"
+          [(ngModel)]="registerPrenom"
+          placeholder="Marie"
+        />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="reg-email">Email <span class="required">*</span></label>
+      <input
+        id="reg-email"
+        type="email"
+        class="form-input"
+        [(ngModel)]="registerEmail"
+        placeholder="votre@email.fr"
+        autocomplete="email"
+      />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="reg-tel">Téléphone</label>
+      <input
+        id="reg-tel"
+        type="tel"
+        class="form-input"
+        [(ngModel)]="registerTelephone"
+        placeholder="06 12 34 56 78"
+      />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="reg-dob">Date de naissance <span class="required">*</span></label>
+      <input
+        id="reg-dob"
+        type="date"
+        class="form-input"
+        [(ngModel)]="registerDateNaissance"
+      />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="reg-password">Mot de passe <span class="required">*</span></label>
+      <input
+        id="reg-password"
+        type="password"
+        class="form-input"
+        [(ngModel)]="registerPassword"
+        placeholder="••••••••"
+        autocomplete="new-password"
+      />
+    </div>
+
+    <div class="form-error" *ngIf="registerError">{{ registerError }}</div>
+    <div class="form-success" *ngIf="registerSuccess">
+      Compte créé avec succès ! Vous pouvez maintenant vous connecter.
+    </div>
+
+    <button class="btn-primary btn-full" (click)="onRegister()">
+      S'inscrire
+    </button>
+  </div>
+
+</div>
