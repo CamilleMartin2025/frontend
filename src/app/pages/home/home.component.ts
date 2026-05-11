@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { BookCardComponent } from '../../components/book-card.component';
 import { Book, Event } from '../../models/book.model';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, BookCardComponent],
+  imports: [CommonModule, RouterLink, BookCardComponent, FormsModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
