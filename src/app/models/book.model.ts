@@ -36,9 +36,12 @@ export interface Event {
 }
 
 export interface User {
+  id: number;
   firstName: string;
   lastName: string;
   email: string;
   phone?: string;
-  birthDate?: Date;
+  birthDate: Date;
+  password: string; //TODO - link with BDD security
+  role: number; //TODO - link with token connexion to access diff. dashboards
 }
