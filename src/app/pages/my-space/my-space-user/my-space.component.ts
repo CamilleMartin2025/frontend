@@ -2,7 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Loan, User } from '../../models/book.model';
+import { Loan, User } from '../../../models/book.model';
 
 @Component({
   selector: 'app-my-space',

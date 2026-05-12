@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { HomeComponent } from './pages/home/home.component';
 import { LoginComponent } from './pages/login/login.component';
 import { BookDetailComponent } from './pages/book-detail/book-detail.component';
-import { MySpaceComponent } from './pages/my-space/my-space.component';
+import { MySpaceComponent } from './pages/my-space/my-space-user/my-space.component';
 import { CatalogueComponent } from './pages/catalogue/catalogue.component';
 
 export const routes: Routes = [
