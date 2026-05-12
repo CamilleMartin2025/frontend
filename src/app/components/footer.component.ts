@@ -54,12 +54,10 @@ import { RouterLink } from '@angular/router';
             <h4>Catalogue</h4>
             <a routerLink="/">Accueil</a>
             <a routerLink="/catalogue">Tous les livres</a>
-            <a routerLink="/">Nouveautés</a>
           </div>
           <div class="footer-col">
             <h4>Mon compte</h4>
             <a routerLink="/mon-espace">Mon espace</a>
-            <a routerLink="/mon-espace">Mes emprunts</a>
             <a routerLink="/login">Connexion</a>
           </div>
           <div class="footer-col">

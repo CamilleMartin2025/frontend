@@ -15,6 +15,7 @@ export class MySpaceComponent {
   editMode = false;
   renewSuccess: number | null = null;
 
+  // Temporaire avant lien BDD
   user: User = {
     firstName: 'Marie',
     lastName: 'Dupont',
@@ -23,7 +24,7 @@ export class MySpaceComponent {
     birthDate: new Date('1990-04-15'),
   };
 
-  // Copie temporaire pour édition
+  // Temporaire avant lien BDD
   userEdit: User = { ...this.user };
 
   loans: Loan[] = [
