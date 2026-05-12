@@ -257,3 +257,25 @@
   .book-title { font-size: 1.7rem; }
   .related-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Livre non trouvé ── */
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  gap: 12px;
+}
+
+.not-found-emoji { font-size: 3rem; }
+.not-found-title { font-size: 1.8rem; font-weight: 700; }
+.not-found-sub   { color: var(--color-text-muted); font-size: 0.95rem; }
+
+/* ── Auteur dans cartes liées ── */
+.related-author {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: -4px;
+}

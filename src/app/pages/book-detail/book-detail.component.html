@@ -1,102 +1,111 @@
-<div class="container detail-wrapper">
-
-  <!-- Colonne gauche : couverture -->
-  <div class="cover-col">
-    <div class="cover-frame">
-      <img [src]="book.cover" [alt]="book.title" class="cover-img" />
-    </div>
-  </div>
-
-  <!-- Colonne droite : infos -->
-  <div class="info-col">
-    <h1 class="book-title">{{ book.title }}</h1>
-    <p class="book-author">{{ book.author }}</p>
-
-    <p class="availability" [class.available]="book.available" [class.unavailable]="!book.available">
-      {{ book.available ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
-    </p>
-
-    <!-- Étoiles -->
-    <div class="stars">
-      <span *ngFor="let filled of starsArray(book.rating)">
-        {{ filled ? '★' : '☆' }}
-      </span>
-    </div>
-
-    <!-- Description -->
-    <div class="book-description">
-      <p *ngFor="let para of book.description.split('\n\n')">{{ para }}</p>
-    </div>
-
-    <!-- Bouton emprunt -->
-    <button
-      class="btn-primary borrow-btn"
-      [disabled]="!book.available || borrowed"
-      (click)="onBorrow()"
-    >
-      {{ borrowed ? 'Emprunté ✓' : 'Emprunter' }}
-    </button>
-
-    <!-- Genres -->
-    <div class="genres">
-      <span class="genre-tag" *ngFor="let g of book.genre">{{ g }}</span>
-    </div>
-  </div>
+<!-- Livre non trouvé -->
+<div class="container not-found" *ngIf="notFound">
+  <p class="not-found-emoji">📚</p>
+  <h1 class="not-found-title">Livre introuvable</h1>
+  <p class="not-found-sub">Ce livre n'existe pas dans notre catalogue.</p>
+  <a routerLink="/catalogue" class="btn-primary" style="margin-top: 20px; display:inline-block">
+    Retour au catalogue
+  </a>
 </div>
 
-<!-- Avis -->
-<section class="container reviews-section">
-  <h2 class="section-title">Derniers avis</h2>
-  <div class="reviews-grid">
-    <div class="review-card" *ngFor="let review of reviews">
-      <div class="review-stars">
-        <span *ngFor="let filled of starsArray(review.rating)">
-          {{ filled ? '★' : '☆' }}
-        </span>
+<!-- Détail du livre -->
+<ng-container *ngIf="book && !notFound">
+
+  <div class="container detail-wrapper">
+
+    <!-- Couverture -->
+    <div class="cover-col">
+      <div class="cover-frame">
+        <img [src]="book.cover" [alt]="book.title" class="cover-img" />
       </div>
-      <h3 class="review-title">{{ review.title }}</h3>
-      <p class="review-body">{{ review.body }}</p>
-      <div class="review-meta">
-        <div class="reviewer-avatar">{{ review.reviewerName.charAt(0) }}</div>
-        <div>
-          <p class="reviewer-name">{{ review.reviewerName }}</p>
-          <p class="review-date">{{ review.date | date:'d MMMM yyyy' : '' : 'fr' }}</p>
+    </div>
+
+    <!-- Infos -->
+    <div class="info-col">
+      <h1 class="book-title">{{ book.title }}</h1>
+      <p class="book-author">{{ book.author }}</p>
+
+      <p class="availability"
+         [class.available]="book.available"
+         [class.unavailable]="!book.available">
+        {{ book.available ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
+      </p>
+
+      <div class="stars">
+        <span *ngFor="let filled of starsArray(book.rating)">{{ filled ? '★' : '☆' }}</span>
+      </div>
+
+      <div class="book-description">
+        <p *ngFor="let para of book.description.split('\n\n')">{{ para }}</p>
+      </div>
+
+      <button
+        class="btn-primary borrow-btn"
+        [disabled]="!book.available || borrowed"
+        (click)="onBorrow()"
+      >
+        {{ borrowed ? 'Emprunté ✓' : 'Emprunter' }}
+      </button>
+
+      <div class="genres">
+        <span class="genre-tag" *ngFor="let g of book.genre">{{ g }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Avis -->
+  <section class="container reviews-section" *ngIf="reviews.length > 0">
+    <h2 class="section-title">Derniers avis</h2>
+    <div class="reviews-grid">
+      <div class="review-card" *ngFor="let review of reviews">
+        <div class="review-stars">
+          <span *ngFor="let filled of starsArray(review.rating)">{{ filled ? '★' : '☆' }}</span>
+        </div>
+        <h3 class="review-title">{{ review.title }}</h3>
+        <p class="review-body">{{ review.body }}</p>
+        <div class="review-meta">
+          <div class="reviewer-avatar">{{ review.reviewerName.charAt(0) }}</div>
+          <div>
+            <p class="reviewer-name">{{ review.reviewerName }}</p>
+            <p class="review-date">{{ review.date | date:'d MMMM yyyy' : '' : 'fr' }}</p>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- Aussi emprunté -->
-<section class="container related-section">
-  <h2 class="section-title">Les autres utilisateurs ont aussi emprunté</h2>
-  <div class="related-grid">
-    <div class="related-card" *ngFor="let b of alsoRead" [routerLink]="['/book', b.id]">
-      <div class="related-cover">
-        <img [src]="b.cover" [alt]="b.title" />
+  <!-- Livres similaires -->
+  <section class="container related-section" *ngIf="similar.length > 0">
+    <h2 class="section-title">Les autres utilisateurs ont aussi emprunté</h2>
+    <div class="related-grid">
+      <div class="related-card" *ngFor="let b of similar" [routerLink]="['/book', b.id]">
+        <div class="related-cover">
+          <img [src]="b.cover" [alt]="b.title" />
+        </div>
+        <p class="related-title">{{ b.title }}</p>
+        <p class="related-author">{{ b.author }}</p>
+        <p [class.badge-available]="b.available" [class.badge-unavailable]="!b.available">
+          {{ b.available ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
+        </p>
       </div>
-      <p class="related-title">{{ b.title }}</p>
-      <p class="related-desc">{{ b.description }}</p>
-      <p [class.badge-available]="b.available" [class.badge-unavailable]="!b.available">
-        {{ b.available ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
-      </p>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- Du même auteur -->
-<section class="container related-section">
-  <h2 class="section-title">Du même auteur</h2>
-  <div class="related-grid">
-    <div class="related-card" *ngFor="let b of alsoRead" [routerLink]="['/book', b.id]">
-      <div class="related-cover">
-        <img [src]="b.cover" [alt]="b.title" />
+  <!-- Du même auteur -->
+  <section class="container related-section" *ngIf="sameAuthor.length > 0">
+    <h2 class="section-title">Du même auteur</h2>
+    <div class="related-grid">
+      <div class="related-card" *ngFor="let b of sameAuthor" [routerLink]="['/book', b.id]">
+        <div class="related-cover">
+          <img [src]="b.cover" [alt]="b.title" />
+        </div>
+        <p class="related-title">{{ b.title }}</p>
+        <p class="related-author">{{ b.author }}</p>
+        <p [class.badge-available]="b.available" [class.badge-unavailable]="!b.available">
+          {{ b.available ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
+        </p>
       </div>
-      <p class="related-title">{{ b.title }}</p>
-      <p class="related-desc">{{ b.description }}</p>
-      <p [class.badge-available]="b.available" [class.badge-unavailable]="!b.available">
-        {{ b.available ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
-      </p>
     </div>
-  </div>
-</section>
+  </section>
+
+</ng-container>
