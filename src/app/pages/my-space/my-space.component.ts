@@ -16,11 +16,14 @@ export class MySpaceComponent implements OnInit {
   renewSuccess: number | null = null;
 
   user: User = {
+    id: 1,
     firstName: 'Marie',
     lastName: 'Dupont',
     email: 'marie.dupont@email.fr',
     phone: '06 12 34 56 78',
     birthDate: new Date('1990-04-15'),
+    password: 'password',
+    role: 1, // TODO 1 : lecteur, 2: bibli., 3: admin ?
   };
 
   userEdit: User = { ...this.user };
