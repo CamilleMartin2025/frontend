@@ -15,6 +15,7 @@ export class BookService {
       genre: ['Classique', 'Aventure'],
       rating: 4,
       available: true,
+      date: new Date('2006-01-16'),
     },
     {
       id: 2,
@@ -26,6 +27,7 @@ export class BookService {
       genre: ['Classique', 'Fantaisie'],
       rating: 5,
       available: true,
+      date: new Date('2009-01-16'),
     },
     {
       id: 3,
@@ -37,6 +39,7 @@ export class BookService {
       genre: ['Classique', 'Aventure'],
       rating: 4,
       available: false,
+      date: new Date('2007-01-16'),
     },
     {
       id: 4,
@@ -48,6 +51,7 @@ export class BookService {
       genre: ['Développement personnel', 'Humour'],
       rating: 5,
       available: true,
+      date: new Date('2012-01-16'),
     },
     {
       id: 5,
@@ -59,6 +63,7 @@ export class BookService {
       genre: ['Policier', 'Thriller'],
       rating: 4,
       available: true,
+      date: new Date('2015-01-16'),
     },
     {
       id: 6,
@@ -70,6 +75,7 @@ export class BookService {
       genre: ['Roman', 'Contemporain'],
       rating: 5,
       available: false,
+      date: new Date('2016-01-16'),
     },
     {
       id: 7,
@@ -81,6 +87,7 @@ export class BookService {
       genre: ['Policier', 'Thriller'],
       rating: 4,
       available: true,
+      date: new Date('2000-01-16'),
     },
     {
       id: 8,
@@ -92,6 +99,7 @@ export class BookService {
       genre: ['Policier', 'Thriller'],
       rating: 4,
       available: true,
+      date: new Date('2020-01-16'),
     },
     {
       id: 9,
@@ -103,6 +111,7 @@ export class BookService {
       genre: ['Développement personnel'],
       rating: 3,
       available: false,
+      date: new Date('2002-01-16'),
     },
     {
       id: 10,
@@ -114,6 +123,7 @@ export class BookService {
       genre: ['Policier', 'Thriller'],
       rating: 4,
       available: true,
+      date: new Date('2025-01-16'),
     },
     {
       id: 11,
@@ -125,6 +135,7 @@ export class BookService {
       genre: ['Policier', 'Thriller'],
       rating: 4,
       available: false,
+      date: new Date('2026-01-16'),
     },
     {
       id: 12,
@@ -136,6 +147,7 @@ export class BookService {
       genre: ['Policier', 'Thriller'],
       rating: 5,
       available: true,
+      date: new Date('2009-01-16'),
     },
     {
       id: 13,
@@ -147,6 +159,7 @@ export class BookService {
       genre: ['Classique', 'Philosophie'],
       rating: 5,
       available: false,
+      date: new Date('2007-01-16'),
     },
     {
       id: 14,
@@ -158,6 +171,7 @@ export class BookService {
       genre: ['Science-fiction', 'Aventure'],
       rating: 5,
       available: false,
+      date: new Date('2021-01-16'),
     },
     {
       id: 15,
@@ -169,6 +183,7 @@ export class BookService {
       genre: ['Classique', 'Dystopie'],
       rating: 5,
       available: true,
+      date: new Date('2023-01-16'),
     },
     {
       id: 16,
@@ -180,6 +195,7 @@ export class BookService {
       genre: ['Classique', 'Philosophie'],
       rating: 5,
       available: true,
+      date: new Date('2004-01-16'),
     },
     {
       id: 17,
@@ -191,6 +207,7 @@ export class BookService {
       genre: ['Histoire', 'Essai'],
       rating: 4,
       available: true,
+      date: new Date('2006-01-16'),
     },
     {
       id: 18,
@@ -202,6 +219,7 @@ export class BookService {
       genre: ['Policier', 'Histoire'],
       rating: 4,
       available: false,
+      date: new Date('2009-01-16'),
     },
   ];
 

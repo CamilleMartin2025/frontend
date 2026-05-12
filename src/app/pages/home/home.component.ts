@@ -26,6 +26,7 @@ export class HomeComponent {
       genre: ['Classique', 'Aventure'],
       rating: 4,
       available: true,
+      date: new Date('2003-05-15'),
     },
     {
       id: 2,
@@ -37,6 +38,7 @@ export class HomeComponent {
       genre: ['Classique', 'Fantaisie'],
       rating: 5,
       available: true,
+      date: new Date('2003-05-15'),
     },
     {
       id: 3,
@@ -47,6 +49,7 @@ export class HomeComponent {
       genre: ['Classique', 'Aventure'],
       rating: 4,
       available: false,
+      date: new Date('2003-05-15'),
     },
   ];
 
@@ -61,6 +64,7 @@ export class HomeComponent {
       genre: ['Développement personnel', 'Humour'],
       rating: 5,
       available: true,
+      date: new Date('2003-05-15'),
     },
     {
       id: 5,
@@ -71,6 +75,7 @@ export class HomeComponent {
       genre: ['Policier', 'Thriller'],
       rating: 4,
       available: true,
+      date: new Date('2003-05-15'),
     },
     {
       id: 6,
@@ -81,6 +86,7 @@ export class HomeComponent {
       genre: ['Roman', 'Contemporain'],
       rating: 5,
       available: false,
+      date: new Date('2003-05-15'),
     },
   ];
 
@@ -95,6 +101,7 @@ export class HomeComponent {
       genre: ['Policier', 'Thriller'],
       rating: 4,
       available: true,
+      date: new Date('2003-05-15'),
     },
     {
       id: 8,
@@ -106,6 +113,7 @@ export class HomeComponent {
       genre: ['Policier', 'Thriller'],
       rating: 4,
       available: true,
+      date: new Date('2003-05-15'),
     },
     {
       id: 9,
@@ -117,6 +125,7 @@ export class HomeComponent {
       genre: ['Développement personnel'],
       rating: 3,
       available: false,
+      date: new Date('2003-05-15'),
     },
   ];
 

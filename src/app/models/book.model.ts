@@ -7,6 +7,7 @@ export interface Book {
   genre: string[];
   rating: number;
   available: boolean;
+  date: Date;
 }
 
 export interface Loan {

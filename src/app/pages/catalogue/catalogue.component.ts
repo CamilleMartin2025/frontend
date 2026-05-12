@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { BookService } from '../../services/book.service';
 import { Book } from '../../models/book.model';
 
-type SortOption = 'title-asc' | 'title-desc' | 'author-asc' | 'rating-desc';
+type SortOption = 'title-asc' | 'title-desc' | 'author-asc' | 'rating-desc' | 'date-asc';
 
 @Component({
   selector: 'app-catalogue',
@@ -64,6 +64,8 @@ export class CatalogueComponent implements OnInit {
           return a.author.localeCompare(b.author, 'fr');
         case 'rating-desc':
           return b.rating - a.rating;
+        case 'date-asc':
+          return a.date.getTime() - b.date.getTime();
         default:
           return 0;
       }
