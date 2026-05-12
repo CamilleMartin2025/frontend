@@ -15,6 +15,7 @@ export class MySpaceComponent implements OnInit {
   editMode = false;
   renewSuccess: number | null = null;
 
+  // TODO : get with api authentification
   user: User = {
     id: 1,
     firstName: 'Marie',

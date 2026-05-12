@@ -61,10 +61,10 @@
 .loans-list {
   background: var(--color-tag-bg);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  /*overflow: hidden;*/
   display: flex;
   flex-direction: column;
-  animation: fadeUp 0.4s ease 0.05s both;
+  /*animation: fadeUp 0.4s ease 0.05s both;*/
 }
 
 .loan-item {
@@ -75,7 +75,7 @@
   background: var(--color-surface);
   border-radius: var(--radius-md);
   margin: 6px;
-  transition: box-shadow var(--transition);
+  /*transition: box-shadow var(--transition);*/
 }
 
 .loan-item:hover {
@@ -96,6 +96,15 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.loan-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--radius-sm);
 }
 
 /* Titre / auteur */
@@ -179,7 +188,7 @@
   padding: 8px 18px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all var(--transition);
+  /*transition: all var(--transition);*/
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -255,7 +264,7 @@
   font-size: 0.95rem;
   color: var(--color-text);
   background: var(--color-surface);
-  transition: border-color 0.2s;
+  /*transition: border-color 0.2s;*/
   outline: none;
   font-family: var(--font-body);
 }
@@ -276,7 +285,7 @@
   cursor: pointer;
   padding: 8px 0;
   font-family: var(--font-body);
-  transition: color var(--transition);
+  /*transition: color var(--transition);*/
 }
 
 .btn-cancel:hover { color: var(--color-text); }
@@ -311,6 +320,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  border-radius: var(--radius-sm);
 }
 
 .loan-thumb-placeholder {

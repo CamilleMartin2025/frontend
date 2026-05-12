@@ -1,0 +1,320 @@
+.myspace-wrapper {
+  padding-top: 48px;
+  padding-bottom: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  max-width: 860px;
+}
+
+/* ── En-tête ── */
+.user-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  animation: fadeUp 0.4s ease forwards;
+}
+
+.user-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.user-name {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.user-section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* ── Alert ── */
+.alert-success {
+  background: #edf7f0;
+  border: 1px solid #9fe1cb;
+  color: var(--color-available);
+  border-radius: var(--radius-sm);
+  padding: 12px 18px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  animation: fadeUp 0.3s ease;
+}
+
+/* ── Liste des emprunts ── */
+.loans-list {
+  background: var(--color-tag-bg);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: fadeUp 0.4s ease 0.05s both;
+}
+
+.loan-item {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 28px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  margin: 6px;
+  transition: box-shadow var(--transition);
+}
+
+.loan-item:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.loan-item.loan-late {
+  border: 1.5px solid #f5c4b3;
+  background: #fffaf9;
+}
+
+/* Icône livre */
+.loan-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Titre / auteur */
+.loan-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.loan-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.loan-author {
+  font-size: 0.83rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* Date */
+.loan-date {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.loan-date-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.loan-date-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.loan-date-value.date-late {
+  color: var(--color-accent);
+}
+
+/* Badge J-X */
+.loan-badge {
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  min-width: 72px;
+  text-align: center;
+}
+
+.badge-ok {
+  background: #e6f7ef;
+  color: var(--color-available);
+}
+
+.badge-urgent {
+  background: #fef6e4;
+  color: var(--color-warning);
+}
+
+.badge-late {
+  background: #fdecea;
+  color: var(--color-accent);
+}
+
+/* Boutons action */
+.btn-action {
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.btn-renew {
+  background: none;
+  border: none;
+  color: var(--color-text);
+}
+
+.btn-renew:hover {
+  color: var(--color-available);
+  text-decoration: underline;
+}
+
+.btn-return {
+  background: none;
+  border: 1.5px solid var(--color-accent);
+  color: var(--color-accent);
+  border-radius: var(--radius-sm);
+}
+
+.btn-return:hover {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* ── État vide ── */
+.empty-state {
+  padding: 48px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Section infos personnelles ── */
+.personal-section {
+  animation: fadeUp 0.4s ease 0.1s both;
+}
+
+.edit-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.form-input {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  transition: border-color 0.2s;
+  outline: none;
+  font-family: var(--font-body);
+}
+
+.form-input:focus { border-color: var(--color-text); }
+
+.edit-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-cancel {
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 8px 0;
+  font-family: var(--font-body);
+  transition: color var(--transition);
+}
+
+.btn-cancel:hover { color: var(--color-text); }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .loan-item {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .loan-date { align-items: flex-start; }
+
+  .edit-grid { grid-template-columns: 1fr; }
+
+  .user-name { font-size: 1.5rem; }
+}
+
+/* ── Miniature emprunt ── */
+.loan-thumb {
+  width: 42px;
+  height: 62px;
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.loan-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.loan-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+}
