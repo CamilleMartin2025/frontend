@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Book, Review } from '../models/book.model';
 
+// TODO : link with Livre - Revue BDD
 @Injectable({ providedIn: 'root' })
 export class BookService {
   private books: Book[] = [
