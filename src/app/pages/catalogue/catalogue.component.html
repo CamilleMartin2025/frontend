@@ -1,0 +1,178 @@
+<div class="catalogue-layout">
+
+  <!-- ══ SIDEBAR FILTRES ══ -->
+  <aside class="filters-sidebar" [class.open]="filtersOpen()">
+
+    <div class="filters-header">
+      <h2 class="filters-title">Filtres</h2>
+      <button class="clear-btn" *ngIf="hasActiveFilters()" (click)="clearFilters()">
+        Réinitialiser
+      </button>
+    </div>
+
+    <!-- Disponibilité -->
+    <div class="filter-group">
+      <h3 class="filter-group-title">Disponibilité</h3>
+      <div class="radio-group">
+        <label class="radio-label" [class.active]="availabilityFilter() === 'all'">
+          <input type="radio" name="avail" value="all"
+                 [checked]="availabilityFilter() === 'all'"
+                 (change)="setAvailability('all')" />
+          Tous
+        </label>
+        <label class="radio-label" [class.active]="availabilityFilter() === 'available'">
+          <input type="radio" name="avail" value="available"
+                 [checked]="availabilityFilter() === 'available'"
+                 (change)="setAvailability('available')" />
+          <span class="dot dot-available"></span> Disponible
+        </label>
+        <label class="radio-label" [class.active]="availabilityFilter() === 'unavailable'">
+          <input type="radio" name="avail" value="unavailable"
+                 [checked]="availabilityFilter() === 'unavailable'"
+                 (change)="setAvailability('unavailable')" />
+          <span class="dot dot-unavailable"></span> Non disponible
+        </label>
+      </div>
+    </div>
+
+    <!-- Genres -->
+    <div class="filter-group">
+      <h3 class="filter-group-title">Catégories</h3>
+      <div class="genres-list">
+        <button
+          class="genre-chip"
+          *ngFor="let genre of allGenres"
+          [class.selected]="isGenreSelected(genre)"
+          (click)="toggleGenre(genre)"
+        >
+          {{ genre }}
+        </button>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══ CONTENU PRINCIPAL ══ -->
+  <main class="catalogue-main">
+
+    <!-- Barre supérieure -->
+    <div class="top-bar">
+      <div class="search-bar">
+        <svg class="search-icon" width="17" height="17" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Titre, auteur, catégorie…"
+          [value]="searchQuery()"
+          (input)="onSearch($any($event.target).value)"
+        />
+        <button class="clear-search" *ngIf="searchQuery()"
+                (click)="onSearch('')" aria-label="Effacer">✕</button>
+      </div>
+
+      <div class="bar-right">
+        <!-- Bouton filtres mobile -->
+        <button class="filter-toggle-btn" (click)="toggleFilters()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="4" y1="6" x2="20" y2="6"/>
+            <line x1="8" y1="12" x2="20" y2="12"/>
+            <line x1="12" y1="18" x2="20" y2="18"/>
+          </svg>
+          Filtres
+          <span class="filter-count" *ngIf="hasActiveFilters()">
+            {{ selectedGenres().length + (availabilityFilter() !== 'all' ? 1 : 0) }}
+          </span>
+        </button>
+
+        <!-- Tri -->
+        <div class="sort-wrap">
+          <label class="sort-label">Trier par</label>
+          <select class="sort-select" [value]="sortBy()" (change)="setSort($any($event.target).value)">
+            <option value="title-asc">Titre A → Z</option>
+            <option value="title-desc">Titre Z → A</option>
+            <option value="author-asc">Auteur A → Z</option>
+            <option value="rating-desc">Mieux notés</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tags filtres actifs -->
+    <div class="active-filters" *ngIf="hasActiveFilters() || searchQuery()">
+      <span class="result-count">{{ resultCount() }} résultat{{ resultCount() > 1 ? 's' : '' }}</span>
+      <button class="active-tag" *ngIf="availabilityFilter() !== 'all'"
+              (click)="setAvailability('all')">
+        {{ availabilityFilter() === 'available' ? 'Disponible' : 'Non disponible' }} ✕
+      </button>
+      <button class="active-tag" *ngFor="let g of selectedGenres()"
+              (click)="toggleGenre(g)">
+        {{ g }} ✕
+      </button>
+    </div>
+
+    <!-- Liste des livres -->
+    <div class="books-list" *ngIf="resultCount() > 0">
+      <a
+        class="book-row"
+        *ngFor="let book of filteredBooks()"
+        [routerLink]="['/book', book.id]"
+      >
+        <!-- Miniature -->
+        <div class="book-thumb">
+          <img [src]="book.cover" [alt]="book.title" loading="lazy" />
+        </div>
+
+        <!-- Titre + auteur -->
+        <div class="book-meta">
+          <p class="book-title">{{ book.title }}</p>
+          <p class="book-author">{{ book.author }}</p>
+        </div>
+
+        <!-- Catégories -->
+        <div class="book-genres">
+          <span class="genre-tag" *ngFor="let g of book.genre">{{ g }}</span>
+        </div>
+
+        <!-- Note -->
+        <div class="book-rating">
+          <span class="star filled" *ngFor="let filled of starsArray(book.rating); let i = index"
+                [class.filled]="filled" [class.empty]="!filled">
+            {{ filled ? '★' : '☆' }}
+          </span>
+        </div>
+
+        <!-- Disponibilité -->
+        <div class="book-availability">
+          <span class="avail-badge" [class.avail-yes]="book.available" [class.avail-no]="!book.available">
+            <span class="avail-dot"></span>
+            {{ book.available ? 'Disponible' : 'Emprunté' }}
+          </span>
+        </div>
+
+        <!-- Chevron -->
+        <div class="book-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </a>
+    </div>
+
+    <!-- État vide -->
+    <div class="empty-state" *ngIf="resultCount() === 0">
+      <div class="empty-icon">📚</div>
+      <p class="empty-title">Aucun livre trouvé</p>
+      <p class="empty-sub">Essayez d'autres mots-clés ou réinitialisez les filtres.</p>
+      <button class="btn-primary" style="margin-top: 20px" (click)="clearFilters(); onSearch('')">
+        Réinitialiser la recherche
+      </button>
+    </div>
+
+  </main>
+</div>
