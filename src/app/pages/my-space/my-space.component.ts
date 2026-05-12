@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -11,11 +11,10 @@ import { Loan, User } from '../../models/book.model';
   templateUrl: './my-space.component.html',
   styleUrl: './my-space.component.css',
 })
-export class MySpaceComponent {
+export class MySpaceComponent implements OnInit {
   editMode = false;
   renewSuccess: number | null = null;
 
-  // Temporaire avant lien BDD
   user: User = {
     firstName: 'Marie',
     lastName: 'Dupont',
@@ -24,59 +23,65 @@ export class MySpaceComponent {
     birthDate: new Date('1990-04-15'),
   };
 
-  // Temporaire avant lien BDD
   userEdit: User = { ...this.user };
+  loans: Loan[] = [];
 
-  loans: Loan[] = [
-    {
-      id: 1,
-      book: {
-        id: 13,
-        title: "L'Étranger",
-        author: 'Albert Camus',
-        cover: '',
-        description: '',
-        genre: ['Classique'],
-        rating: 5,
-        available: false,
+  constructor(private cdr: ChangeDetectorRef) {}
+
+  ngOnInit(): void {
+    // Remplacer par LoanService.getMyLoans() plus tard
+    this.loans = [
+      {
+        id: 1,
+        book: {
+          id: 13,
+          title: "L'Étranger",
+          author: 'Albert Camus',
+          cover: 'https://m.media-amazon.com/images/I/41pFLMkOqhL.jpg',
+          description: '',
+          genre: ['Classique'],
+          rating: 5,
+          available: false,
+        },
+        dueDate: new Date('2026-05-15'),
+        daysLeft: 3,
+        isLate: false,
       },
-      dueDate: new Date('2026-05-15'),
-      daysLeft: 3,
-      isLate: false,
-    },
-    {
-      id: 2,
-      book: {
-        id: 14,
-        title: 'Dune',
-        author: 'Frank Herbert',
-        cover: '',
-        description: '',
-        genre: ['Science-fiction'],
-        rating: 5,
-        available: false,
+      {
+        id: 2,
+        book: {
+          id: 14,
+          title: 'Dune',
+          author: 'Frank Herbert',
+          cover: 'https://m.media-amazon.com/images/I/81ym3QUd3KL.jpg',
+          description: '',
+          genre: ['Science-fiction'],
+          rating: 5,
+          available: false,
+        },
+        dueDate: new Date('2026-05-01'),
+        daysLeft: -11,
+        isLate: true,
       },
-      dueDate: new Date('2026-05-01'),
-      daysLeft: -11,
-      isLate: true,
-    },
-    {
-      id: 3,
-      book: {
-        id: 15,
-        title: '1984',
-        author: 'George Orwell',
-        cover: '',
-        description: '',
-        genre: ['Classique', 'Dystopie'],
-        rating: 5,
-        available: false,
+      {
+        id: 3,
+        book: {
+          id: 15,
+          title: '1984',
+          author: 'George Orwell',
+          cover: 'https://m.media-amazon.com/images/I/71kxa2iBsNL.jpg',
+          description: '',
+          genre: ['Classique', 'Dystopie'],
+          rating: 5,
+          available: false,
+        },
+        dueDate: new Date('2026-05-28'),
+        daysLeft: 17,
+        isLate: false,
       },
-      dueDate: new Date('2026-05-28'),
-      daysLeft: 17,
-      isLate: false,
-    },
-  ];
+    ];
+    this.cdr.detectChanges();
+  }
 
   getLoanStatus(loan: Loan): 'late' | 'urgent' | 'ok' {
     if (loan.isLate) return 'late';
@@ -92,14 +97,17 @@ export class MySpaceComponent {
   onRenew(loan: Loan) {
     loan.dueDate = new Date(loan.dueDate.getTime() + 14 * 24 * 60 * 60 * 1000);
     loan.daysLeft += 14;
+    loan.isLate = false;
+    this.loans = [...this.loans]; // force change detection
     this.renewSuccess = loan.id;
-    setTimeout(() => (this.renewSuccess = null), 3000);
-    // TODO: appel au LoanService
+    setTimeout(() => {
+      this.renewSuccess = null;
+      this.cdr.detectChanges();
+    }, 3000);
   }
 
   onReturn(loan: Loan) {
     this.loans = this.loans.filter((l) => l.id !== loan.id);
-    // TODO: appel au LoanService
   }
 
   onEditToggle() {
@@ -110,7 +118,6 @@ export class MySpaceComponent {
   onSave() {
     this.user = { ...this.userEdit };
     this.editMode = false;
-    // TODO: appel au UserService
   }
 
   onCancel() {

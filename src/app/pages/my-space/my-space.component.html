@@ -21,12 +21,10 @@
       *ngFor="let loan of loans; let i = index"
       [class.loan-late]="loan.isLate"
     >
-      <!-- Icône livre -->
-      <div class="loan-book-icon" [style.background]="bookColor(i)">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-        </svg>
+      <!-- Miniature : couverture si dispo, sinon couleur neutre sans icône -->
+      <div class="loan-thumb">
+        <img *ngIf="loan.book.cover" [src]="loan.book.cover" [alt]="loan.book.title" />
+        <div *ngIf="!loan.book.cover" class="loan-thumb-placeholder" [style.background]="bookColor(i)"></div>
       </div>
 
       <!-- Titre / auteur -->
@@ -54,18 +52,10 @@
       </div>
 
       <!-- Action -->
-      <button
-        *ngIf="!loan.isLate"
-        class="btn-action btn-renew"
-        (click)="onRenew(loan)"
-      >
+      <button *ngIf="!loan.isLate" class="btn-action btn-renew" (click)="onRenew(loan)">
         Renouveler
       </button>
-      <button
-        *ngIf="loan.isLate"
-        class="btn-action btn-return"
-        (click)="onReturn(loan)"
-      >
+      <button *ngIf="loan.isLate" class="btn-action btn-return" (click)="onReturn(loan)">
         Retourner
       </button>
     </div>
@@ -81,14 +71,12 @@
 
   <!-- Bloc infos personnelles -->
   <div class="personal-section">
-    <!-- Affichage -->
     <div class="personal-view" *ngIf="!editMode">
       <button class="btn-primary" (click)="onEditToggle()">
         Modifier mes infos personnelles
       </button>
     </div>
 
-    <!-- Formulaire d'édition -->
     <div class="personal-edit" *ngIf="editMode">
       <h2 class="edit-title">Modifier mes informations</h2>
       <div class="edit-grid">

@@ -8,8 +8,8 @@ import { CatalogueComponent } from './pages/catalogue/catalogue.component';
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'login', component: LoginComponent },
+  { path: 'catalogue', component: CatalogueComponent },
   { path: 'book/:id', component: BookDetailComponent },
   { path: 'mon-espace', component: MySpaceComponent },
   { path: '**', redirectTo: '' },
-  { path: 'catalogue', component: CatalogueComponent },
 ];

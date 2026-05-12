@@ -88,7 +88,7 @@
 }
 
 /* Icône livre */
-.loan-book-icon {
+.loan-thumb {
   width: 48px;
   height: 48px;
   border-radius: var(--radius-sm);
@@ -294,4 +294,27 @@
   .edit-grid { grid-template-columns: 1fr; }
 
   .user-name { font-size: 1.5rem; }
+}
+
+/* ── Miniature emprunt ── */
+.loan-thumb {
+  width: 42px;
+  height: 62px;
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.loan-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.loan-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
 }
