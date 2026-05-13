@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { BookService } from '../../services/book.service';
 import { Book } from '../../models/book.model';
 
-type SortOption = 'title-asc' | 'title-desc' | 'author-asc' | 'rating-desc' | 'date-asc';
+type SortOption = 'title-asc' | 'title-desc' | 'author-asc' | 'rating-desc';
 
 @Component({
   selector: 'app-catalogue',
@@ -15,29 +15,35 @@ type SortOption = 'title-asc' | 'title-desc' | 'author-asc' | 'rating-desc' | 'd
   styleUrl: './catalogue.component.css',
 })
 export class CatalogueComponent implements OnInit {
+  // Tous les filtres en signals
   searchQuery = signal('');
   selectedGenres = signal<string[]>([]);
   availabilityFilter = signal<'all' | 'available' | 'unavailable'>('all');
   sortBy = signal<SortOption>('title-asc');
   filtersOpen = signal(false);
 
-  allBooks: Book[] = [];
+  // Source de données en signal pour que computed() réagisse correctement
+  private allBooksSignal = signal<Book[]>([]);
   allGenres: string[] = [];
 
   constructor(private bookService: BookService) {}
 
   ngOnInit(): void {
-    this.allBooks = this.bookService.getAll();
-    this.allGenres = [...new Set(this.allBooks.flatMap((b) => b.genre))].sort();
+    const books = this.bookService.getAll();
+    // Mise à jour synchrone du signal → computed() se recalcule une seule fois
+    this.allBooksSignal.set(books);
+    this.allGenres = [...new Set(books.flatMap((b) => b.genre))].sort();
   }
 
+  // computed() dépend uniquement de signals → recalcul garanti et synchrone
   filteredBooks = computed(() => {
+    const books = this.allBooksSignal(); // ← signal, réactif
     const q = this.searchQuery().toLowerCase().trim();
     const genres = this.selectedGenres();
     const avail = this.availabilityFilter();
     const sort = this.sortBy();
 
-    let result = this.allBooks.filter((book) => {
+    const result = books.filter((book) => {
       const matchSearch =
         !q ||
         book.title.toLowerCase().includes(q) ||
@@ -64,8 +70,6 @@ export class CatalogueComponent implements OnInit {
           return a.author.localeCompare(b.author, 'fr');
         case 'rating-desc':
           return b.rating - a.rating;
-        case 'date-asc':
-          return a.date.getTime() - b.date.getTime();
         default:
           return 0;
       }
@@ -92,11 +96,11 @@ export class CatalogueComponent implements OnInit {
     return this.selectedGenres().includes(genre);
   }
 
-  setAvailability(value: 'all' | 'available' | 'unavailable') {
-    this.availabilityFilter.set(value);
+  setAvailability(v: 'all' | 'available' | 'unavailable') {
+    this.availabilityFilter.set(v);
   }
-  setSort(value: string) {
-    this.sortBy.set(value as SortOption);
+  setSort(v: string) {
+    this.sortBy.set(v as SortOption);
   }
   toggleFilters() {
     this.filtersOpen.set(!this.filtersOpen());
