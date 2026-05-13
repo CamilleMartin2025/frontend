@@ -44,22 +44,29 @@ export class LoginComponent {
       return;
     }
 
-    const result = this.auth.login({
-      email: this.loginEmail,
-      password: this.loginPassword,
-    });
-
-    this.loginLoading = false;
-
-    if (!result.success) {
-      this.loginError = result.error ?? 'Erreur de connexion.';
-      return;
-    }
-
-    // Redirection selon le rôle
-    if (this.auth.isAdmin()) this.router.navigate(['/admin']);
-    else if (this.auth.isLibraire()) this.router.navigate(['/libraire']);
-    else this.router.navigate(['/mon-espace']);
+    // Changement ici : on s'abonne à l'appel API
+    this.auth
+      .login({
+        email: this.loginEmail,
+        password: this.loginPassword,
+      })
+      .subscribe({
+        next: (result) => {
+          this.loginLoading = false;
+          if (result.success) {
+            // Redirection selon le rôle une fois connecté
+            if (this.auth.isAdmin()) this.router.navigate(['/admin']);
+            else if (this.auth.isLibraire()) this.router.navigate(['/libraire']);
+            else this.router.navigate(['/mon-espace']);
+          } else {
+            this.loginError = result.error ?? 'Erreur de connexion.';
+          }
+        },
+        error: () => {
+          this.loginLoading = false;
+          this.loginError = 'Erreur technique avec le serveur.';
+        },
+      });
   }
 
   onRegister(): void {
@@ -76,25 +83,31 @@ export class LoginComponent {
       this.registerError = 'Veuillez remplir tous les champs obligatoires (*).';
       this.registerLoading = false;
       return;
-    }
+    }   
 
-    const result = this.auth.register({
-      firstName: this.registerPrenom,
-      lastName: this.registerNom,
-      email: this.registerEmail,
-      password: this.registerPassword,
-      phone: this.registerTelephone || undefined,
-      birthDate: this.registerDateNaissance || undefined,
-    });
-
-    this.registerLoading = false;
-
-    if (!result.success) {
-      this.registerError = result.error ?? "Erreur lors de l'inscription.";
-      return;
-    }
-
-    // Inscription réussie → redirection vers mon espace (role 1)
-    this.router.navigate(['/mon-espace']);
+    // Changement ici aussi : on s'abonne à l'inscription
+    this.auth
+      .register({
+        firstName: this.registerPrenom,
+        lastName: this.registerNom,
+        email: this.registerEmail,
+        password: this.registerPassword,
+        phone: this.registerTelephone || undefined,
+        birthDate: this.registerDateNaissance || undefined,
+      })
+      .subscribe({
+        next: (result) => {
+          this.registerLoading = false;
+          if (result.success) {
+            this.router.navigate(['/mon-espace']);
+          } else {
+            this.registerError = result.error ?? "Erreur lors de l'inscription.";
+          }
+        },
+        error: () => {
+          this.registerLoading = false;
+          this.registerError = 'Le serveur ne répond pas.';
+        },
+      });
   }
 }

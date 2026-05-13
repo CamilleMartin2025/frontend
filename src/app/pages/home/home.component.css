@@ -24,51 +24,6 @@
   animation: fadeUp 0.4s ease 0.1s both;
 }
 
-/* ── Search ── */
-.search-bar {
-  display: flex;
-  align-items: center;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  max-width: 560px;
-  margin-top: 32px;
-  background: var(--color-surface);
-  transition: border-color 0.2s;
-  animation: fadeUp 0.4s ease 0.15s both;
-}
-
-.search-bar:focus-within {
-  border-color: var(--color-text);
-}
-
-.search-input {
-  flex: 1;
-  border: none;
-  outline: none;
-  padding: 14px 18px;
-  font-size: 0.95rem;
-  background: transparent;
-  color: var(--color-text);
-}
-
-.search-input::placeholder {
-  color: var(--color-text-muted);
-}
-
-.search-btn {
-  background: none;
-  border: none;
-  padding: 0 18px;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  transition: color 0.2s;
-}
-
-.search-btn:hover { color: var(--color-text); }
-
 /* ── Books sections ── */
 .books-section {
   padding: 56px 0 0;
