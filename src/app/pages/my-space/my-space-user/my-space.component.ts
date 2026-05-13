@@ -16,14 +16,14 @@ export class MySpaceComponent {
   renewSuccess: number | null = null;
 
   user: User = {
+    createdAt: new Date(),
     id: 0,
-    password: '',
     role: 1,
     firstName: 'Marie',
     lastName: 'Dupont',
     email: 'marie.dupont@email.fr',
     phone: '06 12 34 56 78',
-    birthDate: new Date('1990-04-15'),
+    birthDate: new Date('1990-04-15')
   };
 
   userEdit: User = { ...this.user };

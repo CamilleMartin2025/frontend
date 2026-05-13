@@ -60,14 +60,14 @@ export class MySpaceAdminComponent implements OnInit {
   renewSuccess: number | null = null;
 
   user: User = {
+    createdAt: new Date(),
     id:0,
     firstName: 'Admin',
     lastName: 'Bibliothèque',
     email: 'admin@quartier-solidaire.fr',
     phone: '02 99 00 00 00',
     birthDate: new Date('1985-06-10'),
-    password:'admin',
-    role:3,
+    role:3
   };
   userEdit: User = { ...this.user };
 
