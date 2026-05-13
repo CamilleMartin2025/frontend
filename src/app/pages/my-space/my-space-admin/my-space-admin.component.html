@@ -35,6 +35,15 @@
         <span class="nav-icon">👤</span>
         Mon espace
       </button>
+      <button class="nav-item" [class.active]="activeTab === 'catalogue'" (click)="setTab('catalogue')">
+        <span class="nav-icon">📚</span>
+        Catalogue
+      </button>
+      <button class="nav-item nav-item-admin" [class.active]="activeTab === 'utilisateurs'" (click)="setTab('utilisateurs')">
+        <span class="nav-icon">👥</span>
+        Utilisateurs
+      </button>
+      <div class="nav-separator"></div>
       <a routerLink="/" class="nav-item nav-item-link">
         <span class="nav-icon">🏠</span>
         Accueil
@@ -317,6 +326,165 @@
             <button class="btn-primary" (click)="onSave()">Enregistrer</button>
             <button class="btn-cancel"  (click)="onCancel()">Annuler</button>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── ONGLET CATALOGUE ─── -->
+    <section *ngIf="activeTab === 'catalogue'" class="tab-content fade-up">
+      <div class="tab-header">
+        <div>
+          <h1 class="tab-title">Gestion du catalogue</h1>
+          <p class="tab-sub">{{ catalogueBooks.length }} livre{{ catalogueBooks.length > 1 ? 's' : '' }} au total</p>
+        </div>
+        <button class="btn-primary" (click)="showAddForm = !showAddForm">
+          {{ showAddForm ? '✕ Annuler' : '+ Ajouter un livre' }}
+        </button>
+      </div>
+
+      <!-- Messages -->
+      <div class="alert-success" *ngIf="catalogueSuccess">{{ catalogueSuccess }}</div>
+      <div class="alert-error"   *ngIf="catalogueError">{{ catalogueError }}</div>
+
+      <!-- Formulaire ajout -->
+      <div class="add-book-form" *ngIf="showAddForm">
+        <h2 class="form-section-title">Nouveau livre</h2>
+        <div class="add-book-grid">
+          <div class="form-group">
+            <label class="form-label">Titre <span class="required">*</span></label>
+            <input type="text" class="form-input" [(ngModel)]="newBook.title" placeholder="Don Quichotte" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Auteur <span class="required">*</span></label>
+            <input type="text" class="form-input" [(ngModel)]="newBook.author" placeholder="Cervantes" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">URL de couverture</label>
+            <input type="url" class="form-input" [(ngModel)]="newBook.cover" placeholder="https://..." />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Catégories <span class="form-hint">(séparées par des virgules)</span></label>
+            <input type="text" class="form-input" [(ngModel)]="newBookGenresRaw" placeholder="Classique, Aventure" />
+          </div>
+          <div class="form-group form-group-full">
+            <label class="form-label">Description</label>
+            <textarea class="form-input form-textarea" [(ngModel)]="newBook.description" rows="3" placeholder="Résumé du livre..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Note (0-5)</label>
+            <input type="number" class="form-input" [(ngModel)]="newBook.rating" min="0" max="5" />
+          </div>
+          <div class="form-group form-check-group">
+            <label class="form-check-label">
+              <input type="checkbox" [(ngModel)]="newBook.available" />
+              <span>Disponible à l'emprunt</span>
+            </label>
+          </div>
+        </div>
+        <div class="add-book-actions">
+          <button class="btn-primary" (click)="onAddBook()">Ajouter au catalogue</button>
+          <button class="btn-cancel" (click)="showAddForm = false">Annuler</button>
+        </div>
+      </div>
+
+      <!-- Liste des livres -->
+      <div class="catalogue-admin-list">
+        <div class="catalogue-admin-row" *ngFor="let book of catalogueBooks">
+          <div class="cat-thumb">
+            <img *ngIf="book.cover" [src]="book.cover" [alt]="book.title" />
+            <div *ngIf="!book.cover" class="cat-thumb-placeholder">📖</div>
+          </div>
+          <div class="cat-info">
+            <p class="cat-title">{{ book.title }}</p>
+            <p class="cat-author">{{ book.author }}</p>
+            <div class="cat-genres">
+              <span class="genre-tag" *ngFor="let g of book.genre">{{ g }}</span>
+            </div>
+          </div>
+          <div class="cat-center">
+            <button
+              class="avail-toggle"
+              [class.avail-yes]="book.available"
+              [class.avail-no]="!book.available"
+              (click)="toggleAvailability(book)"
+              title="Cliquer pour basculer la disponibilité"
+            >
+              <span class="avail-dot"></span>
+              {{ book.available ? 'Disponible' : 'Emprunté' }}
+            </button>
+          </div>
+          <div class="cat-actions">
+            <ng-container *ngIf="deleteConfirmId !== book.id">
+              <button class="btn-delete" (click)="deleteConfirmId = book.id">
+                🗑 Supprimer
+              </button>
+            </ng-container>
+            <ng-container *ngIf="deleteConfirmId === book.id">
+              <span class="delete-confirm-label">Confirmer ?</span>
+              <button class="btn-confirm-delete" (click)="onDeleteBook(book.id)">Oui</button>
+              <button class="btn-cancel-delete"  (click)="deleteConfirmId = null">Non</button>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── ONGLET UTILISATEURS (admin only) ─── -->
+    <section *ngIf="activeTab === 'utilisateurs'" class="tab-content fade-up">
+      <div class="tab-header">
+        <div>
+          <h1 class="tab-title">Gestion des utilisateurs</h1>
+          <p class="tab-sub">{{ users.length }} compte{{ users.length > 1 ? 's' : '' }} enregistré{{ users.length > 1 ? 's' : '' }}</p>
+        </div>
+        <div class="search-bar-sm">
+          <input type="text" class="form-input" [(ngModel)]="userSearch" placeholder="Rechercher un utilisateur..." />
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="alert-success" *ngIf="userSuccess">{{ userSuccess }}</div>
+      <div class="alert-error"   *ngIf="userError">{{ userError }}</div>
+
+      <!-- Tableau utilisateurs -->
+      <div class="users-table">
+        <!-- Header -->
+        <div class="users-table-header">
+          <span>Utilisateur</span>
+          <span>Email</span>
+          <span>Membre depuis</span>
+          <span>Rôle</span>
+          <span></span>
+        </div>
+
+        <!-- Lignes -->
+        <div class="users-table-row" *ngFor="let user of filteredUsers">
+          <div class="user-cell-name">
+            <div class="user-mini-avatar">{{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}</div>
+            <div>
+              <p class="user-fullname">{{ user.firstName }} {{ user.lastName }}</p>
+            </div>
+          </div>
+          <div class="user-cell-email">{{ user.email }}</div>
+          <div class="user-cell-date">{{ user.createdAt | date:'MMM yyyy' : '' : 'fr' }}</div>
+          <div class="user-cell-role">
+            <select
+              class="role-select"
+              [class]="'role-select-' + user.role"
+              [value]="user.role"
+              (change)="onRoleChange(user, $event)"
+            >
+              <option *ngFor="let r of roleOptions" [value]="r">{{ roleLabels[r] }}</option>
+            </select>
+          </div>
+          <div class="user-cell-actions">
+            <button class="btn-delete-user" (click)="onDeleteUser(user)" title="Supprimer le compte">
+              🗑
+            </button>
+          </div>
+        </div>
+
+        <div class="empty-state" *ngIf="filteredUsers.length === 0">
+          <p>Aucun utilisateur trouvé.</p>
         </div>
       </div>
     </section>

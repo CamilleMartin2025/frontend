@@ -311,4 +311,39 @@ export class BookService {
       .filter((b) => b.id !== book.id && b.genre.some((g) => book.genre.includes(g)))
       .slice(0, 3);
   }
+
+  // ─────────────────────────────────────────────────
+  //  CRUD CATALOGUE (libraire & admin)
+  // ─────────────────────────────────────────────────
+
+  /** Ajoute un livre et retourne le livre créé */
+  addBook(data: Omit<Book, 'id'>): Book {
+    const newBook: Book = {
+      ...data,
+      id: Math.max(...this.books.map(b => b.id), 0) + 1
+    };
+    this.books = [...this.books, newBook];
+    return newBook;
+  }
+
+  /** Supprime un livre par id, retourne true si trouvé */
+  deleteBook(id: number): boolean {
+    const before = this.books.length;
+    this.books = this.books.filter(b => b.id !== id);
+    return this.books.length < before;
+  }
+
+  /** Met à jour un livre existant */
+  updateBook(id: number, changes: Partial<Omit<Book, 'id'>>): Book | undefined {
+    const idx = this.books.findIndex(b => b.id === id);
+    if (idx === -1) return undefined;
+    this.books[idx] = { ...this.books[idx], ...changes };
+    return this.books[idx];
+  }
+
+  /** Liste tous les genres distincts présents dans le catalogue */
+  getAllGenres(): string[] {
+    return [...new Set(this.books.flatMap(b => b.genre))].sort();
+  }
 }
+

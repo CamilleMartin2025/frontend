@@ -242,4 +242,50 @@ export class AuthService {
     if (parts.length !== 3) throw new Error('Token invalide');
     return JSON.parse(atob(parts[1]));
   }
+
+  // ─────────────────────────────────────────────────
+  //  GESTION UTILISATEURS (admin only)
+  // ─────────────────────────────────────────────────
+
+  /** Retourne tous les utilisateurs (sans mot de passe) */
+  getAllUsers(): Omit<User, never>[] {
+    return MOCK_USERS.map(({ password, ...u }) => u);
+  }
+
+  /** Change le rôle d'un utilisateur */
+  updateUserRole(userId: number, newRole: UserRole): { success: boolean; error?: string } {
+    const idx = MOCK_USERS.findIndex(u => u.id === userId);
+    if (idx === -1) return { success: false, error: 'Utilisateur introuvable.' };
+
+    // Empêcher de rétrograder le seul admin restant
+    if (MOCK_USERS[idx].role === 3 && newRole < 3) {
+      const adminCount = MOCK_USERS.filter(u => u.role === 3).length;
+      if (adminCount <= 1) return { success: false, error: 'Impossible : il doit rester au moins un administrateur.' };
+    }
+
+    MOCK_USERS[idx].role = newRole;
+
+    // Si l'utilisateur modifié est l'utilisateur courant, mettre à jour le signal
+    const current = this.currentUserSignal();
+    if (current?.id === userId) {
+      const updated = { ...current, role: newRole };
+      localStorage.setItem(USER_KEY, JSON.stringify(updated));
+      this.currentUserSignal.set(updated);
+    }
+
+    return { success: true };
+  }
+
+  /** Supprime un utilisateur (admin only) */
+  deleteUser(userId: number): { success: boolean; error?: string } {
+    const idx = MOCK_USERS.findIndex(u => u.id === userId);
+    if (idx === -1) return { success: false, error: 'Utilisateur introuvable.' };
+
+    if (MOCK_USERS[idx].id === this.currentUserSignal()?.id) {
+      return { success: false, error: 'Vous ne pouvez pas supprimer votre propre compte.' };
+    }
+
+    MOCK_USERS.splice(idx, 1);
+    return { success: true };
+  }
 }

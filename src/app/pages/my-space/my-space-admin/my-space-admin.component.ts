@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { BookService } from '../../../services/book.service';
-import { Book, Loan, Review, User } from '../../../models/book.model';
+import { AuthService } from '../../../services/authentification.service';
+import { Book, Loan, Review, User, UserRole, ROLE_LABELS } from '../../../models/book.model';
 
-type AdminTab = 'emprunts' | 'retards' | 'avis' | 'stats' | 'mon-espace';
+type AdminTab = 'emprunts' | 'retards' | 'avis' | 'stats' | 'catalogue' | 'utilisateurs' | 'mon-espace';
 
 interface BorrowRequest {
   id: number;
@@ -92,7 +93,8 @@ export class MySpaceAdminComponent implements OnInit {
 
   constructor(
     private bookService: BookService,
-    private cdr: ChangeDetectorRef,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -101,6 +103,8 @@ export class MySpaceAdminComponent implements OnInit {
     this.loadLateReturns();
     this.loadReviews();
     this.loadStats();
+    this.loadCatalogue();
+    this.loadUsers();
     this.cdr.detectChanges();
   }
 
@@ -454,4 +458,110 @@ export class MySpaceAdminComponent implements OnInit {
   setTab(tab: AdminTab): void {
     this.activeTab = tab;
   }
+
+  // ─────────────────────────────────────────
+  //  CATALOGUE (libraire & admin)
+  // ─────────────────────────────────────────
+  catalogueBooks: Book[] = [];
+  showAddForm    = false;
+  deleteConfirmId: number | null = null;
+  catalogueSuccess = '';
+  catalogueError   = '';
+
+  newBook: Omit<Book, 'id'> = {
+    title: '', author: '', cover: '', description: '',
+    genre: [], rating: 0, available: true, date: new Date('2026-05-05'),
+  };
+  newBookGenresRaw = ''; // saisie libre séparée par virgules
+
+  private loadCatalogue(): void {
+    this.catalogueBooks = this.bookService.getAll();
+  }
+
+  onAddBook(): void {
+    this.catalogueError = '';
+    if (!this.newBook.title.trim() || !this.newBook.author.trim()) {
+      this.catalogueError = 'Titre et auteur sont obligatoires.';
+      return;
+    }
+    const genres = this.newBookGenresRaw
+      .split(',').map(g => g.trim()).filter(g => g.length > 0);
+    const book = this.bookService.addBook({ ...this.newBook, genre: genres });
+    this.catalogueBooks = this.bookService.getAll();
+    this.catalogueSuccess = `"${book.title}" ajouté avec succès.`;
+    this.showAddForm = false;
+    this.resetNewBook();
+    setTimeout(() => this.catalogueSuccess = '', 4000);
+  }
+
+  onDeleteBook(id: number): void {
+    this.bookService.deleteBook(id);
+    this.catalogueBooks = this.bookService.getAll();
+    this.deleteConfirmId = null;
+  }
+
+  toggleAvailability(book: Book): void {
+    this.bookService.updateBook(book.id, { available: !book.available });
+    this.catalogueBooks = this.bookService.getAll();
+  }
+
+  private resetNewBook(): void {
+    this.newBook = { title: '', author: '', cover: '', description: '', genre: [], rating: 0, available: true, date: new Date() };
+    this.newBookGenresRaw = '';
+  }
+
+  // ─────────────────────────────────────────
+  //  UTILISATEURS (admin only)
+  // ─────────────────────────────────────────
+  users: User[] = [];
+  userSearch    = '';
+  userSuccess   = '';
+  userError     = '';
+  roleLabels    = ROLE_LABELS;
+  roleOptions: UserRole[] = [1, 2, 3];
+
+  get filteredUsers(): User[] {
+    const q = this.userSearch.toLowerCase();
+    return this.users.filter(u =>
+      !q || u.firstName.toLowerCase().includes(q)
+      || u.lastName.toLowerCase().includes(q)
+      || u.email.toLowerCase().includes(q)
+    );
+  }
+
+  private loadUsers(): void {
+    this.users = this.authService.getAllUsers() as User[];
+  }
+
+  onRoleChange(user: User, event: Event): void {
+    const newRole = Number((event.target as HTMLSelectElement).value) as UserRole;
+    const result  = this.authService.updateUserRole(user.id, newRole);
+    if (result.success) {
+      this.loadUsers();
+      this.userSuccess = `Rôle de ${user.firstName} mis à jour.`;
+      setTimeout(() => this.userSuccess = '', 3000);
+    } else {
+      this.userError = result.error ?? 'Erreur.';
+      setTimeout(() => this.userError = '', 4000);
+    }
+  }
+
+  onDeleteUser(user: User): void {
+    const result = this.authService.deleteUser(user.id);
+    if (result.success) {
+      this.loadUsers();
+      this.userSuccess = `Compte de ${user.firstName} ${user.lastName} supprimé.`;
+      setTimeout(() => this.userSuccess = '', 3000);
+    } else {
+      this.userError = result.error ?? 'Erreur.';
+      setTimeout(() => this.userError = '', 4000);
+    }
+  }
+
+  getRoleBadgeClass(role: UserRole): string {
+    return `role-badge role-${role}`;
+  }
+
+
+
 }
