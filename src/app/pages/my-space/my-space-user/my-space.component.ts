@@ -33,7 +33,7 @@ export class MySpaceComponent implements OnInit {
   constructor(private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
-    // Remplacer par LoanService.getMyLoans() plus tard
+    // TODO Remplacer par LoanService.getMyLoans()
     this.loans = [
       {
         id: 1,

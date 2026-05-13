@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { RouterOutlet} from '@angular/router';
 import { NavbarComponent } from './components/navbar.component';
 import { FooterComponent } from './components/footer.component';
 
@@ -15,4 +15,14 @@ import { FooterComponent } from './components/footer.component';
     <app-footer />
   `,
 })
-export class App {}
+export class App implements OnInit {
+
+  ngOnInit() {
+    window.scrollTo(0, 0);
+  }
+
+}
+
+
+
+
