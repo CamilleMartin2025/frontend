@@ -12,6 +12,7 @@ export const routes: Routes = [
   { path: 'catalogue', component: CatalogueComponent },
   { path: 'book/:id', component: BookDetailComponent },
   { path: 'mon-espace', component: MySpaceComponent },
+  // TODO /admin - /librarian pour les tests - à changer vers mon-espace normal avec token connexion-role
   { path: 'mon-espace/admin', component: MySpaceAdminComponent },
   { path: '**', redirectTo: '' },
 ];

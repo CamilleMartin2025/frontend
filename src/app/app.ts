@@ -18,7 +18,7 @@ import { FooterComponent } from './components/footer.component';
 export class App implements OnInit {
 
   ngOnInit() {
-    window.scrollTo(0, 0);
+    window.scrollTo(screenLeft,screenTop);
   }
 
 }
