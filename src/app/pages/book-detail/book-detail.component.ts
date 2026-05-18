@@ -51,6 +51,7 @@ export class BookDetailComponent implements OnInit {
         }
 
         this.book = book;
+        this.notFound = false;
 
         this.reviewService.getReviews(id).subscribe({
           next: (r) => (this.reviews = r),
