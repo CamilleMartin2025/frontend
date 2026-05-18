@@ -2,7 +2,7 @@ export interface Book {
   id: number;
   titre: string;
   auteur: string;
-  categorie: string[];
+  categorie: string;
   resume: string;
   isbn: string;
   quantite: number;

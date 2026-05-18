@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Book, Review } from '../../models/model';
 import { ReviewService } from '../../services/review.service';
 import { BookService } from '../../services/book.service';
@@ -29,35 +29,49 @@ export class BookDetailComponent implements OnInit {
   ngOnInit(): void {
     // Recharger quand l'id change (navigation entre livres liés)
     this.route.paramMap.subscribe((params) => {
-      const id = Number(params.get('id'));
+      const idParam = params.get('id');
+      if (!idParam) return;
+
+      const id = Number(idParam);
+      if (isNaN(id)) {
+        this.notFound = true;
+        return;
+      }
+
       this.loadBook(id);
     });
   }
 
   private loadBook(id: number): void {
-    this.bookService.getById(id).subscribe((book: Book | undefined) => {
-      if (!book) {
+    this.bookService.getById(id).subscribe({
+      next: (book) => {
+        if (!book) {
+          this.notFound = true;
+          return;
+        }
+
+        this.book = book;
+
+        this.reviewService.getReviews(id).subscribe({
+          next: (r) => (this.reviews = r),
+          error: (err) => console.error('reviews error', err),
+        });
+
+        this.bookService.getSimilar(book).subscribe({
+          next: (s) => (this.similar = s),
+          error: (err) => console.error('similar error', err),
+        });
+
+        this.bookService.getByAuthor(book.auteur, id).subscribe({
+          next: (a) => (this.sameAuthor = a),
+          error: (err) => console.error('author error', err),
+        });
+      },
+      error: (err) => {
+        console.error('book error', err);
         this.notFound = true;
-        return;
-      }
-
-      const currentBook: Book = book;
-      this.book = currentBook;
+      },
     });
-
-      this.notFound = false;
-
-      this.reviewService.getReviews(id).subscribe((reviews) => {
-        this.reviews = reviews;
-      });
-
-      this.bookService.getSimilar(this.book).subscribe((similar) => {
-        this.similar = similar;
-      });
-
-      this.bookService.getByAuthor(this.book.auteur, id).subscribe((sameAuthor) => {
-        this.sameAuthor = sameAuthor;
-      });
   }
 
   setBorrowQuantity(book: Book): void {

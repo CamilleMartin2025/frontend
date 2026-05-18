@@ -15,9 +15,9 @@ import {
 //  ⚠️  ENDPOINTS — adapter selon ton API
 // ─────────────────────────────────────────────────────
 const API = {
-  login: 'http://localhost:8080/api/auth/login', // POST  → LoginResponse
-  register: 'http://localhost:8080/api/auth/register', // POST  → LoginResponse
-  me: 'http://localhost:8080/api/auth/me', // GET   → User  (si dispo)
+  login: 'http://localhost:8080/api/auth', // POST  → LoginResponse
+  register: 'http://localhost:8080/api/auth', // POST  → LoginResponse
+  me: 'http://localhost:8080/api/auth', // GET   → User  (si dispo)
   users: 'http://localhost:8080/api/auth', // GET   → User[]
 };
 

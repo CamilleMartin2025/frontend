@@ -1,9 +1,10 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Book } from '../../models/model';
 import { BookService } from '../../services/book.service';
+import { isEmpty } from 'rxjs';
 
 type SortOption = 'title-asc' | 'title-desc' | 'author-asc' | 'rating-desc';
 
@@ -17,7 +18,7 @@ type SortOption = 'title-asc' | 'title-desc' | 'author-asc' | 'rating-desc';
 export class CatalogueComponent implements OnInit {
   // Tous les filtres en signals
   searchQuery = signal('');
-  selectedGenres = signal<string[]>([]);
+  selectedGenre = signal<string>('');
   availabilityFilter = signal<'all' | 'available' | 'unavailable'>('all');
   sortBy = signal<SortOption>('title-asc');
   filtersOpen = signal(false);
@@ -26,13 +27,18 @@ export class CatalogueComponent implements OnInit {
   private allBooksSignal = signal<Book[]>([]);
   allGenres: string[] = [];
 
-  constructor(private bookService: BookService) {}
+  constructor(
+    private bookService: BookService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.bookService.getAll().subscribe((books) => {
       this.allBooksSignal.set(books);
 
       this.allGenres = [...new Set(books.flatMap((b) => b.categorie))].sort();
+
+      this.cdr.detectChanges();
     });
   }
 
@@ -40,7 +46,7 @@ export class CatalogueComponent implements OnInit {
   filteredBooks = computed(() => {
     const books = this.allBooksSignal(); // ← signal, réactif
     const q = this.searchQuery().toLowerCase().trim();
-    const genres = this.selectedGenres();
+    const genre = this.selectedGenre();
     const avail = this.availabilityFilter();
     const sort = this.sortBy();
 
@@ -49,9 +55,9 @@ export class CatalogueComponent implements OnInit {
         !q ||
         book.titre.toLowerCase().includes(q) ||
         book.auteur.toLowerCase().includes(q) ||
-        book.categorie.some((g) => g.toLowerCase().includes(q));
+        book.categorie.toLowerCase().includes(q);
 
-      const matchGenre = genres.length === 0 || book.categorie.some((g) => genres.includes(g));
+      const matchGenre = book.categorie == genre || book.categorie != genre;
 
       const matchAvail =
         avail === 'all' ||
@@ -60,6 +66,7 @@ export class CatalogueComponent implements OnInit {
 
       return matchSearch && matchGenre && matchAvail;
     });
+
 
     return [...result].sort((a, b) => {
       switch (sort) {
@@ -79,7 +86,7 @@ export class CatalogueComponent implements OnInit {
 
   resultCount = computed(() => this.filteredBooks().length);
   hasActiveFilters = computed(
-    () => this.selectedGenres().length > 0 || this.availabilityFilter() !== 'all',
+    () => this.selectedGenre() !== '' || this.availabilityFilter() !== 'all',
   );
 
   onSearch(value: string) {
@@ -87,14 +94,12 @@ export class CatalogueComponent implements OnInit {
   }
 
   toggleGenre(genre: string) {
-    const current = this.selectedGenres();
-    this.selectedGenres.set(
-      current.includes(genre) ? current.filter((g) => g !== genre) : [...current, genre],
-    );
+    const current = this.selectedGenre();
+    this.selectedGenre.set(genre);
   }
 
   isGenreSelected(genre: string): boolean {
-    return this.selectedGenres().includes(genre);
+    return this.selectedGenre().includes(genre);
   }
 
   setAvailability(v: 'all' | 'available' | 'unavailable') {
@@ -108,7 +113,7 @@ export class CatalogueComponent implements OnInit {
   }
 
   clearFilters() {
-    this.selectedGenres.set([]);
+    this.selectedGenre.set('');
     this.availabilityFilter.set('all');
   }
 

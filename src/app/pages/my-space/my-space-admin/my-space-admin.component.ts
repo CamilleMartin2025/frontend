@@ -517,7 +517,7 @@ export class MySpaceAdminComponent implements OnInit {
       // Répartition par genre
       const genreMap = new Map<string, number>();
 
-      books.forEach((b) => b.categorie.forEach((g) => genreMap.set(g, (genreMap.get(g) ?? 0) + 1)));
+      books.forEach((b) => genreMap.set(b.categorie, (genreMap.get(b.categorie) ?? 0) + 1));
 
       const total = [...genreMap.values()].reduce((s, v) => s + v, 0);
 
@@ -548,7 +548,7 @@ export class MySpaceAdminComponent implements OnInit {
     titre: '',
     auteur: '',
     resume: '',
-    categorie: [],
+    categorie: '',
     note: 0,
     quantite: 0,
     date_ajout: new Date('2026-05-05'),
@@ -570,10 +570,7 @@ export class MySpaceAdminComponent implements OnInit {
       return;
     }
 
-    const genres = this.newBookGenresRaw
-      .split(',')
-      .map((g) => g.trim())
-      .filter((g) => g.length > 0);
+    const genres = this.newBookGenresRaw;
 
     this.bookService.addBook({ ...this.newBook, categorie: genres }).subscribe((book) => {
       // message succès avec vrai Book
@@ -615,7 +612,7 @@ export class MySpaceAdminComponent implements OnInit {
       titre: '',
       auteur: '',
       resume: '',
-      categorie: [],
+      categorie: '',
       note: 0,
       quantite: 1,
       date_ajout: new Date(),

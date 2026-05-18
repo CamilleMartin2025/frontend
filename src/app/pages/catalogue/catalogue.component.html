@@ -85,7 +85,7 @@
           </svg>
           Filtres
           <span class="filter-count" *ngIf="hasActiveFilters()">
-            {{ selectedGenres().length + (availabilityFilter() !== 'all' ? 1 : 0) }}
+            {{ selectedGenre().length + (availabilityFilter() !== 'all' ? 1 : 0) }}
           </span>
         </button>
 
@@ -110,9 +110,9 @@
               (click)="setAvailability('all')">
         {{ availabilityFilter() === 'available' ? 'Disponible' : 'Non disponible' }} ✕
       </button>
-      <button class="active-tag" *ngFor="let g of selectedGenres()"
-              (click)="toggleGenre(g)">
-        {{ g }} ✕
+      <button class="active-tag"
+              (click)="toggleGenre(selectedGenre())">
+        {{ selectedGenre() }} ✕
       </button>
     </div>
 
@@ -123,10 +123,6 @@
         *ngFor="let book of filteredBooks()"
         [routerLink]="['/book', book.id]"
       >
-        <!-- Miniature -->
-<!--        <div class="book-thumb">-->
-<!--          <img [src]="book.cover" [alt]="book.title" loading="lazy" />-->
-<!--        </div>-->
 
         <!-- Titre + auteur -->
         <div class="book-meta">
@@ -151,7 +147,7 @@
         <div class="book-availability">
           <span class="avail-badge" [class.avail-yes]="book.quantite > 0" [class.avail-no]=" book.quantite == 0">
             <span class="avail-dot"></span>
-            {{ book.quantite == 0 ? 'Disponible' : 'Emprunté' }}
+            {{ book.quantite > 0 ? 'Disponible' : 'Emprunté' }}
           </span>
         </div>
 

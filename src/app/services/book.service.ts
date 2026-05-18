@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Book } from '../models/model';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { map } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
@@ -27,10 +27,14 @@ export class BookService {
 
   // Livres du même genre (hors livre courant)
   getSimilar(book: Book): Observable<Book[]> {
+    if (!book) {
+      return of([]);
+    }
+
     return this.getAll().pipe(
       map((books) =>
         books
-          .filter((b) => b.id !== book.id && b.categorie.some((g) => book.categorie.includes(g)))
+          .filter((b) => b.id !== book.id && b.categorie == book.categorie)
           .slice(0, 3),
       ),
     );
