@@ -53,7 +53,7 @@ export const exactRoleGuard = (role: UserRole): CanActivateFn => {
       return false;
     }
 
-    if (auth.hasExactRole(role)) return true;
+    if (auth.hasRole(role)) return true;
 
     router.navigate(['/acces-refuse']);
     return false;

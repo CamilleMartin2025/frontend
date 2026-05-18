@@ -2,8 +2,10 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Loan, User } from '../../../models/model';
+import { Loan, LoanView, User } from '../../../models/model';
 import { LoanService } from '../../../services/loan.service';
+import { AuthService } from '../../../services/authentification.service';
+import { switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-my-space',
@@ -15,85 +17,101 @@ import { LoanService } from '../../../services/loan.service';
 export class MySpaceComponent {
   editMode = false;
   renewSuccess: number | null = null;
+  renewError = '';
 
-  constructor(private loanService: LoanService) {}
+  constructor(
+    private loanService: LoanService,
+    private authService: AuthService,
+  ) {}
 
-  user: User = {
-    id: 0,
-    role: 1,
-    prenom: 'Marie',
-    nom: 'Dupont',
-    email: 'marie.dupont@email.fr',
-    tel: '06 12 34 56 78',
-    date_naissance: new Date('1990-04-15'),
-  };
+  user!: User;
+  userEdit!: User;
 
-  userEdit: User = { ...this.user };
+  // Typé LoanView → toutes les propriétés calculées disponibles dans le template
+  loans: LoanView[] = [];
+  loansLoading = true;
 
-  // @ts-ignore
-  loans: [];
+  // Propriété pour comparaison de dates dans le template
+  today = new Date();
 
   ngOnInit(): void {
-    this.loans = [];
-    this.loanService.getByUserId(this.user.id).subscribe({
-      next: (data) => {
-        // @ts-ignore
-        this.loans = data || [];
+    const current = this.authService.currentUser();
+    if (current) {
+      this.user = { ...current };
+      this.userEdit = { ...current };
+    }
+    // Charger les emprunts enrichis de l'utilisateur connecté
+    // @ts-ignore
+    this.loanService.getViewsByUserId(current.id).subscribe({
+      next: (loans) => {
+        this.loans = loans;
+        this.loansLoading = false;
       },
       error: (err) => {
-        console.error(err);
-        this.loans = [];
+        console.error('Erreur chargement emprunts :', err);
+        this.loansLoading = false;
       },
     });
   }
 
-  getLoanStatus(loan: Loan): 'late' | 'urgent' | 'ok' {
-    const now = new Date().getTime();
-    const due = new Date(loan.date_retour_prevu).getTime();
-
-    if (due < now) return 'late';
-
-    const diffDays = (due - now) / (1000 * 60 * 60 * 24);
-
-    if (diffDays <= 5) return 'urgent';
-
+  // ── Statut badge ────────────────────────────────────
+  getLoanStatus(loan: LoanView): 'late' | 'urgent' | 'ok' {
+    if (loan.isLate) return 'late';
+    if (loan.daysLeft <= 5) return 'urgent';
     return 'ok';
   }
 
-  getLoanLabel(loan: Loan): string {
-    let isLate = false;
-    const now = new Date().getTime();
-    const due = new Date(loan.date_retour_prevu).getTime();
-    if (due < now) {
-      isLate = true;
-    }
-    const diffDays = (due - now) / (1000 * 60 * 60 * 24);
-    if (this.getLoanStatus(loan) == 'late') {
-      return isLate ? 'En retard' : `J-${diffDays}`;
-    }
-    return '';
+  getLoanLabel(loan: LoanView): string {
+    if (loan.isLate) return 'En retard';
+    return `J-${loan.daysLeft}`;
   }
 
-  onRenew(loan: Loan): void {
-    loan.date_retour_prevu = new Date(loan.date_retour_prevu.getTime() + 14 * 86400000);
-    this.loans = [...this.loans]; // nouveau tableau → Angular détecte le changement
-    this.renewSuccess = loan.id;
-    setTimeout(() => (this.renewSuccess = null), 3000);
+  // ── Actions emprunts ────────────────────────────────
+  onRenew(loan: LoanView): void {
+    this.loanService
+      .renew(loan.id)
+      .pipe(
+        // enrich() est async → on enchaîne avec switchMap
+        switchMap((updated) => this.loanService.enrich(updated)),
+      )
+      .subscribe({
+        next: (enriched) => {
+          this.loans = this.loans.map((l) => (l.id === loan.id ? enriched : l));
+          this.renewSuccess = loan.id;
+          setTimeout(() => (this.renewSuccess = null), 3000);
+        },
+        error: (err) => {
+          this.renewError = err.message ?? 'Erreur lors du renouvellement.';
+          setTimeout(() => (this.renewError = ''), 4000);
+        },
+      });
   }
 
-  onReturn(loan: Loan): void {
-    // @ts-ignore
-    this.loans = this.loans.filter((l) => l.id !== loan.id);
+  onReturn(loan: LoanView): void {
+    this.loanService.return(loan.id).subscribe({
+      next: () => {
+        this.loans = this.loans.filter((l) => l.id !== loan.id);
+      },
+      error: (err) => console.error('Erreur retour :', err),
+    });
   }
 
+  // ── Profil ───────────────────────────────────────────
   onEditToggle(): void {
     this.userEdit = { ...this.user };
     this.editMode = true;
   }
+
   onSave(): void {
-    this.user = { ...this.userEdit };
-    this.editMode = false;
+    this.authService.updateProfile(this.userEdit).subscribe({
+      next: (updated) => {
+        this.user = { ...updated };
+        this.editMode = false;
+      },
+      error: (err) => console.error('Erreur mise à jour profil :', err),
+    });
   }
+
   onCancel(): void {
     this.editMode = false;
   }

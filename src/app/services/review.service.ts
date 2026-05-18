@@ -6,9 +6,12 @@ import { BookService } from './book.service';
 
 @Injectable({ providedIn: 'root' })
 export class ReviewService {
-  private apiReviewUrl = '/api/review';
+  private apiReviewUrl = 'http://localhost:8080/api/review';
 
-  constructor(private http: HttpClient, private bookService: BookService) {}
+  constructor(
+    private http: HttpClient,
+    private bookService: BookService,
+  ) {}
 
   getAll(): Observable<Review[]> {
     return this.http.get<Review[]>(this.apiReviewUrl);

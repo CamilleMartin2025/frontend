@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { BookService } from '../../../services/book.service';
 import { AuthService } from '../../../services/authentification.service';
-import { Book, Loan, Review, User, UserRole, ROLE_LABELS } from '../../../models/model';
-import { Observable } from 'rxjs';
+import { Book, Loan, Review, User, UserRole, ROLE_LABELS, LoanView } from '../../../models/model';
+import { Observable, switchMap } from 'rxjs';
 import { LoanService } from '../../../services/loan.service';
 
 type AdminTab = 'emprunts' | 'retards' | 'avis' | 'stats' | 'catalogue' | 'utilisateurs' | 'mon-espace';
@@ -61,19 +61,18 @@ export class MySpaceAdminComponent implements OnInit {
   // ── Mon espace (identique à MySpaceComponent) ──
   editMode = false;
   renewSuccess: number | null = null;
+  renewError = '';
 
-  user: User = {
-    id: 0,
-    prenom: 'Admin',
-    nom: 'Bibliothèque',
-    email: 'admin@quartier-solidaire.fr',
-    tel: '02 99 00 00 00',
-    date_naissance: new Date('1985-06-10'),
-    role: 3,
-  };
-  userEdit: User = { ...this.user };
+  user!: User;
+  userEdit!: User;
 
-  loans!: Loan[];
+  // Typé LoanView → toutes les propriétés calculées disponibles dans le template
+  loans: LoanView[] = [];
+  loansLoading = true;
+
+  // Propriété pour comparaison de dates dans le template
+  today = new Date();
+
   books!: Book[];
 
   // ── Demandes d'emprunts / prolongements ──
@@ -101,7 +100,23 @@ export class MySpaceAdminComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadMyLoans();
+    const current = this.authService.currentUser();
+    if (current) {
+      this.user = { ...current };
+      this.userEdit = { ...current };
+    }
+    // Charger les emprunts enrichis de l'utilisateur connecté
+    // @ts-ignore
+    this.loanService.getViewsByUserId(current.id).subscribe({
+      next: (loans) => {
+        this.loans = loans;
+        this.loansLoading = false;
+      },
+      error: (err) => {
+        console.error('Erreur chargement emprunts :', err);
+        this.loansLoading = false;
+      },
+    });
     this.loadRequests();
     this.loadLateReturns();
     this.loadReviews();
@@ -114,67 +129,65 @@ export class MySpaceAdminComponent implements OnInit {
   // ─────────────────────────────────────────
   //  MON ESPACE
   // ─────────────────────────────────────────
-  private loadMyLoans(): void {
-    this.loans = [];
-    this.loanService.getByUserId(this.user.id).subscribe({
-      next: (data) => {
-        // @ts-ignore
-        this.loans = data || [];
-      },
-      error: (err) => {
-        console.error(err);
-        this.loans = [];
-      }
-    });
-  }
 
-  getLoanStatus(loan: Loan): 'late' | 'urgent' | 'ok' {
-    const now = new Date().getTime();
-    const due = new Date(loan.date_retour_prevu).getTime();
-
-    if (due < now) return 'late';
-
-    const diffDays = (due - now) / (1000 * 60 * 60 * 24);
-
-    if (diffDays <= 5) return 'urgent';
-
+  // ── Statut badge ────────────────────────────────────
+  getLoanStatus(loan: LoanView): 'late' | 'urgent' | 'ok' {
+    if (loan.isLate) return 'late';
+    if (loan.daysLeft <= 5) return 'urgent';
     return 'ok';
   }
 
-  getLoanLabel(loan: Loan): string {
-    let isLate = false;
-    const now = new Date().getTime();
-    const due = new Date(loan.date_retour_prevu).getTime();
-    if (due < now){
-      isLate = true;
-    }
-    const diffDays = (due - now) / (1000 * 60 * 60 * 24);
-    if(this.getLoanStatus(loan) == 'late'){
-      return isLate ? 'En retard' : `J-${diffDays}`;
-    }
-    return '';
+  getLoanLabel(loan: LoanView): string {
+    if (loan.isLate) return 'En retard';
+    return `J-${loan.daysLeft}`;
   }
 
-  onRenew(loan: Loan): void {
-    loan.date_retour_prevu = new Date(loan.date_retour_prevu.getTime() + 14 * 86400000);
-    this.loans = [...this.loans]; // nouveau tableau → Angular détecte le changement
-    this.renewSuccess = loan.id;
-    setTimeout(() => (this.renewSuccess = null), 3000);
+  // ── Actions emprunts ────────────────────────────────
+  onRenew(loan: LoanView): void {
+    this.loanService
+      .renew(loan.id)
+      .pipe(
+        // enrich() est async → on enchaîne avec switchMap
+        switchMap((updated) => this.loanService.enrich(updated)),
+      )
+      .subscribe({
+        next: (enriched) => {
+          this.loans = this.loans.map((l) => (l.id === loan.id ? enriched : l));
+          this.renewSuccess = loan.id;
+          setTimeout(() => (this.renewSuccess = null), 3000);
+        },
+        error: (err) => {
+          this.renewError = err.message ?? 'Erreur lors du renouvellement.';
+          setTimeout(() => (this.renewError = ''), 4000);
+        },
+      });
   }
 
-  onReturn(loan: Loan): void {
-    // @ts-ignore
-    this.loans = this.loans.filter((l) => l.id !== loan.id);
+  onReturn(loan: LoanView): void {
+    this.loanService.return(loan.id).subscribe({
+      next: () => {
+        this.loans = this.loans.filter((l) => l.id !== loan.id);
+      },
+      error: (err) => console.error('Erreur retour :', err),
+    });
   }
 
+  // ── Profil ───────────────────────────────────────────
   onEditToggle(): void {
     this.userEdit = { ...this.user };
     this.editMode = true;
   }
+
   onSave(): void {
-    this.user = { ...this.userEdit };
-    this.editMode = false;
+    this.authService.updateProfile(this.userEdit).subscribe({
+      next: (updated) => {
+        this.user = { ...updated };
+        this.editMode = false;
+      },
+      error: (err) => console.error('Erreur mise à jour profil :', err),
+    });
   }
+
   onCancel(): void {
     this.editMode = false;
   }
@@ -182,7 +195,6 @@ export class MySpaceAdminComponent implements OnInit {
   bookColor(i: number): string {
     return ['#4a90d9', '#5cb87a', '#e07b3a'][i % 3];
   }
-
 
   // ─────────────────────────────────────────
   //  DEMANDES
@@ -588,12 +600,15 @@ export class MySpaceAdminComponent implements OnInit {
   }
 
   //  TODO change to setQuantity with +1 or -1 if returned or borrowed
-  // toggleAvailability(book: Book): void {
-  //   this.bookService.updateBook(book.id, { quantite: !book.quantite });
-  //   this.bookService.getAll().subscribe((books) => {
-  //     this.catalogueBooks = books;
-  //   });
-  // }
+  setBorrowQuantity(book: Book): void {
+    if (book.quantite > 0) {
+      book.quantite = book.quantite - 1;
+    }
+  }
+
+  setReturnQuantity(book: Book): void {
+    book.quantite = book.quantite + 1;
+  }
 
   private resetNewBook(): void {
     this.newBook = {
@@ -631,32 +646,39 @@ export class MySpaceAdminComponent implements OnInit {
   }
 
   private loadUsers(): void {
-    this.users = this.authService.getAllUsers() as User[];
+    this.authService.getAllUsers().subscribe({
+      next: (users) => (this.users = users),
+      error: () => (this.userError = 'Impossible de charger les utilisateurs.'),
+    });
   }
 
   onRoleChange(user: User, event: Event): void {
     const newRole = Number((event.target as HTMLSelectElement).value) as UserRole;
-    const result = this.authService.updateUserRole(user.id, newRole);
-    if (result.success) {
-      this.loadUsers();
-      this.userSuccess = `Rôle de ${user.prenom} mis à jour.`;
-      setTimeout(() => (this.userSuccess = ''), 3000);
-    } else {
-      this.userError = result.error ?? 'Erreur.';
-      setTimeout(() => (this.userError = ''), 4000);
-    }
+    this.authService.updateUserRole(user.id, newRole).subscribe({
+      next: () => {
+        this.loadUsers();
+        this.userSuccess = `Rôle de ${user.prenom} mis à jour.`;
+        setTimeout(() => (this.userSuccess = ''), 3000);
+      },
+      error: (err: Error) => {
+        this.userError = err.message ?? 'Erreur lors de la modification du rôle.';
+        setTimeout(() => (this.userError = ''), 4000);
+      },
+    });
   }
 
   onDeleteUser(user: User): void {
-    const result = this.authService.deleteUser(user.id);
-    if (result.success) {
-      this.loadUsers();
-      this.userSuccess = `Compte de ${user.prenom} ${user.nom} supprimé.`;
-      setTimeout(() => (this.userSuccess = ''), 3000);
-    } else {
-      this.userError = result.error ?? 'Erreur.';
-      setTimeout(() => (this.userError = ''), 4000);
-    }
+    this.authService.deleteUser(user.id).subscribe({
+      next: () => {
+        this.loadUsers();
+        this.userSuccess = `Compte de ${user.prenom} ${user.nom} supprimé.`;
+        setTimeout(() => (this.userSuccess = ''), 3000);
+      },
+      error: (err: Error) => {
+        this.userError = err.message ?? 'Erreur lors de la suppression.';
+        setTimeout(() => (this.userError = ''), 4000);
+      },
+    });
   }
 
   getRoleBadgeClass(role: UserRole): string {

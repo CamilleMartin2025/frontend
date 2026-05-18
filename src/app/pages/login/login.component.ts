@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/authentification.service';
+import { User } from '../../models/model';
 
 @Component({
   selector: 'app-login',
@@ -44,17 +45,25 @@ export class LoginComponent {
       return;
     }
 
-    const result = this.auth.login({
-      email: this.loginEmail,
-      password: this.loginPassword,
-    });
+    this.loginLoading = true;
 
-    this.loginLoading = false;
+    this.auth
+      .login({
+        email: this.loginEmail,
+        password: this.loginPassword,
+      })
+      .subscribe({
+        next: (user: User) => {
+          console.log(user);
 
-    if (!result.success) {
-      this.loginError = result.error ?? 'Erreur de connexion.';
-      return;
-    }
+          this.loginLoading = false;
+        },
+
+        error: (err) => {
+          this.loginError = err.error?.message ?? 'Erreur de connexion.';
+          this.loginLoading = false;
+        },
+      });
 
     // Redirection selon le rôle
     if (this.auth.isAdmin()) this.router.navigate(['/admin']);
@@ -78,21 +87,30 @@ export class LoginComponent {
       return;
     }
 
-    const result = this.auth.register({
-      firstName: this.registerPrenom,
-      lastName: this.registerNom,
-      email: this.registerEmail,
-      password: this.registerPassword,
-      phone: this.registerTelephone || undefined,
-      birthDate: this.registerDateNaissance || undefined,
-    });
+    this.registerLoading = true;
 
-    this.registerLoading = false;
+    this.auth
+      .register({
+        prenom: this.registerPrenom,
+        nom: this.registerNom,
+        email: this.registerEmail,
+        password: this.registerPassword,
+        tel: this.registerTelephone || undefined,
+        date_naissance: this.registerDateNaissance || undefined,
+      })
+      .subscribe({
+        next: (user: User) => {
+          console.log(user);
 
-    if (!result.success) {
-      this.registerError = result.error ?? "Erreur lors de l'inscription.";
-      return;
-    }
+          this.registerLoading = false;
+        },
+
+        error: (err) => {
+          this.registerError = err.error?.message ?? "Erreur lors de l'inscription.";
+
+          this.registerLoading = false;
+        },
+      });
 
     // Inscription réussie → redirection vers mon espace (role 1)
     this.router.navigate(['/mon-espace']);

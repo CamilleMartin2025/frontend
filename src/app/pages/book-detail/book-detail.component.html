@@ -63,9 +63,9 @@
         </div>
         <p class="review-body">{{ review.commentaire }}</p>
         <div class="review-meta">
-          <div class="reviewer-avatar">{{ getUserById(review.id_utilisateur).getName().charAt(0) }}</div>
+          <div class="reviewer-avatar">{{ review.id_utilisateur.toString().charAt(0) }}</div>
           <div>
-            <p class="reviewer-name">{{ getUserById(review.id_utilisateur).getName() }}</p>
+            <p class="reviewer-name">{{ review.id_utilisateur}}</p>
           </div>
         </div>
       </div>

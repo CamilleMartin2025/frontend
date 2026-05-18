@@ -6,7 +6,7 @@ import { map } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class BookService {
-  private apiBookUrl = '/api/books';
+  private apiBookUrl = 'http://localhost:8080/api/books';
 
   constructor(private http: HttpClient) {}
 
@@ -80,7 +80,9 @@ export class BookService {
 
   /** Liste tous les genres distincts présents dans le catalogue */
   getAllGenres(): Observable<string[]> {
-    return this.getAll().pipe(map((books) => [...new Set(books.flatMap((b) => b.categorie))].sort()));
+    return this.getAll().pipe(
+      map((books) => [...new Set(books.flatMap((b) => b.categorie))].sort()),
+    );
   }
 }
 

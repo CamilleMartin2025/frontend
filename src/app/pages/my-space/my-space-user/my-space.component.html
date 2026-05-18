@@ -9,9 +9,15 @@
     </div>
   </div>
 
-  <!-- Message renouvellement -->
+  <!-- Messages -->
   <div class="alert-success" *ngIf="renewSuccess !== null">
-    Emprunt renouvelé de 14 jours avec succès !
+    Emprunt renouvelé avec succès !
+  </div>
+  <div class="alert-error" *ngIf="renewError">{{ renewError }}</div>
+
+  <!-- Chargement -->
+  <div class="loading-state" *ngIf="loansLoading">
+    <p>Chargement de vos emprunts...</p>
   </div>
 
   <!-- Liste des emprunts -->
@@ -19,7 +25,7 @@
     <div
       class="loan-item"
       *ngFor="let loan of loans; let i = index"
-      [class.loan-late]="loan.date_retour_prevu < Date()"
+      [class.loan-late]="loan.isLate"
     >
       <!-- Miniature : couverture si dispo -->
 <!--      <div class="loan-thumb">-->
@@ -45,7 +51,7 @@
       <!-- Date de retour -->
       <div class="loan-date">
         <span class="loan-date-label">Retour le</span>
-        <span class="loan-date-value" [class.date-late]="loan.date_retour_prevu < Date()">
+        <span class="loan-date-value" [class.date-late]="loan.isLate">
           {{ loan.date_retour_prevu | date:'d MMMM yyyy' : '' : 'fr' }}
         </span>
       </div>
@@ -61,10 +67,10 @@
       </div>
 
       <!-- Action -->
-      <button *ngIf="loan.date_retour_prevu > Date()" class="btn-action btn-renew" (click)="onRenew(loan)">
+      <button *ngIf="loan.isLate" class="btn-action btn-renew" (click)="onRenew(loan)">
         Renouveler
       </button>
-      <button *ngIf="loan.date_retour_prevu < Date()" class="btn-action btn-return" (click)="onReturn(loan)">
+      <button *ngIf="loan.isLate" class="btn-action btn-return" (click)="onReturn(loan)">
         Retourner
       </button>
     </div>

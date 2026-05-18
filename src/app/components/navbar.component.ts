@@ -34,7 +34,7 @@ import { AuthService } from '../services/authentification.service';
             <!-- Nom + déconnexion -->
             <div class="user-menu">
               <span class="user-greeting">
-                {{ auth.currentUser()?.firstName }}
+                {{ auth.currentUser()?.prenom }}
                 <span class="role-badge" [class]="'role-' + auth.currentUser()?.role">
                   {{ getRoleLabel() }}
                 </span>

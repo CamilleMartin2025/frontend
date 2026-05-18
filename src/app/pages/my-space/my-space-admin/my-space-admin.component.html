@@ -274,9 +274,15 @@
         <h1 class="tab-title">Mon espace</h1>
       </div>
 
-      <!-- Alerte renouvellement -->
+      <!-- Messages -->
       <div class="alert-success" *ngIf="renewSuccess !== null">
-        Emprunt renouvelé de 14 jours avec succès !
+        Emprunt renouvelé avec succès !
+      </div>
+      <div class="alert-error" *ngIf="renewError">{{ renewError }}</div>
+
+      <!-- Chargement -->
+      <div class="loading-state" *ngIf="loansLoading">
+        <p>Chargement de vos emprunts...</p>
       </div>
 
       <!-- Mes emprunts -->
@@ -287,8 +293,8 @@
 <!--            <div *ngIf="!loan.book.cover" class="loan-thumb-placeholder" [style.background]="bookColor(i)"></div>-->
           </div>
           <div class="loan-info">
-            <p class="loan-title">{{ loan.book.title }}</p>
-            <p class="loan-author">{{ loan.book.author }}</p>
+            <p class="loan-title">{{ loan.book.titre }}</p>
+            <p class="loan-author">{{ loan.book.auteur }}</p>
           </div>
           <div class="loan-date">
             <span class="loan-date-label">Retour le</span>
@@ -299,8 +305,8 @@
           <div class="loan-badge" [class.badge-late]="getLoanStatus(loan) === 'late'" [class.badge-urgent]="getLoanStatus(loan) === 'urgent'" [class.badge-ok]="getLoanStatus(loan) === 'ok'">
             {{ getLoanLabel(loan) }}
           </div>
-          <button *ngIf="!loan.isLate" class="btn-action btn-renew" (click)="onRenewMyLoan(loan)">Renouveler</button>
-          <button *ngIf="loan.isLate"  class="btn-action btn-return" (click)="onReturnMyLoan(loan)">Retourner</button>
+          <button *ngIf="!loan.isLate" class="btn-action btn-renew" (click)="onRenew(loan)">Renouveler</button>
+          <button *ngIf="loan.isLate"  class="btn-action btn-return" (click)="onReturn(loan)">Retourner</button>
         </div>
 
         <div class="empty-state" *ngIf="loans.length === 0">
@@ -317,10 +323,10 @@
         <div class="personal-edit" *ngIf="editMode">
           <h2 class="edit-title">Modifier mes informations</h2>
           <div class="edit-grid">
-            <div class="form-group"><label class="form-label">Prénom</label><input type="text"  class="form-input" [(ngModel)]="userEdit.firstName" /></div>
-            <div class="form-group"><label class="form-label">Nom</label>   <input type="text"  class="form-input" [(ngModel)]="userEdit.lastName"  /></div>
+            <div class="form-group"><label class="form-label">Prénom</label><input type="text"  class="form-input" [(ngModel)]="userEdit.prenom" /></div>
+            <div class="form-group"><label class="form-label">Nom</label>   <input type="text"  class="form-input" [(ngModel)]="userEdit.nom"  /></div>
             <div class="form-group"><label class="form-label">Email</label> <input type="email" class="form-input" [(ngModel)]="userEdit.email"     /></div>
-            <div class="form-group"><label class="form-label">Téléphone</label><input type="tel" class="form-input" [(ngModel)]="userEdit.phone"  /></div>
+            <div class="form-group"><label class="form-label">Téléphone</label><input type="tel" class="form-input" [(ngModel)]="userEdit.tel"  /></div>
           </div>
           <div class="edit-actions">
             <button class="btn-primary" (click)="onSave()">Enregistrer</button>
@@ -406,7 +412,7 @@
               class="avail-toggle"
               [class.avail-yes]="book.quantite > 0"
               [class.avail-no]="book.quantite == 0"
-              (click)="setQuantity(book)"
+              (click)="setBorrowQuantity(book)"
               title="Cliquer pour basculer la disponibilité"
             >
               <span class="avail-dot"></span>

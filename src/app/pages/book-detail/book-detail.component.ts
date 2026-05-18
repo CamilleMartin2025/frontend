@@ -14,7 +14,7 @@ import { BookService } from '../../services/book.service';
   styleUrl: './book-detail.component.css',
 })
 export class BookDetailComponent implements OnInit {
-  book: Book | undefined;
+  book!: Book;
   reviews: Review[] = [];
   similar: Book[] = [];
   sameAuthor: Book[] = [];
@@ -36,34 +36,41 @@ export class BookDetailComponent implements OnInit {
   }
 
   private loadBook(id: number): void {
-    this.bookService.getById(id).subscribe((book) => {
+    this.bookService.getById(id).subscribe((book: Book | undefined) => {
       if (!book) {
         this.notFound = true;
         return;
       }
 
-      this.book = book;
+      const currentBook: Book = book;
+      this.book = currentBook;
+    });
+
       this.notFound = false;
 
       this.reviewService.getReviews(id).subscribe((reviews) => {
         this.reviews = reviews;
       });
 
-      this.bookService.getSimilar(book).subscribe((similar) => {
+      this.bookService.getSimilar(this.book).subscribe((similar) => {
         this.similar = similar;
       });
 
-      this.bookService.getByAuthor(book.auteur, id).subscribe((sameAuthor) => {
+      this.bookService.getByAuthor(this.book.auteur, id).subscribe((sameAuthor) => {
         this.sameAuthor = sameAuthor;
       });
-    });
+  }
+
+  setBorrowQuantity(book: Book): void {
+    if (book.quantite > 0) {
+      book.quantite = book.quantite - 1;
+    }
   }
 
   onBorrow(): void {
     if (this.book?.quantite != 0) {
       this.borrowed = true;
-      this.book.quantite - 1;
-      // TODO: LoanService.borrow(this.book.id)
+      this.setBorrowQuantity(this.book);
     }
   }
 

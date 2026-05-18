@@ -11,14 +11,27 @@ export interface Book {
   date_ajout: Date;
 }
 
+// ── Interface brute renvoyée par l'API ──────────────
 export interface Loan {
   id: number;
-  id_livre: number; //--> getById() in BookService
-  id_utilisateur: number; //--> getById() in AuthService
+  id_livre: number;
+  id_utilisateur: number;
+  date_emprunt: string;        // ISO string ex: "2026-04-01T00:00:00"
+  date_retour_prevu: string;   // ISO string ex: "2026-05-15T00:00:00"
+  date_retour_effectif: string | null; // null si pas encore rendu
+}
+
+// ── Interface enrichie utilisée dans les templates ──
+export interface LoanView {
+  id: number;
+  id_livre: number;
+  id_utilisateur: number;
   date_emprunt: Date;
   date_retour_prevu: Date;
-  date_retour_effectif: Date; //--> daysLeft calculated effectif-emprunt
-  isLate: boolean; //--> isLate if Date today > date_retour_prevu
+  date_retour_effectif: Date | null;
+  daysLeft: number;      // négatif si en retard
+  isLate: boolean;
+  book: Book;
 }
 
 export interface Reservation {
@@ -38,56 +51,63 @@ export interface Review {
   id_livre: number;
 }
 
-// ── Rôles ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════
+//  RÔLES
+// ═══════════════════════════════════════════════════
+
 export type UserRole = 1 | 2 | 3;
-// 1 = Utilisateur standard
-// 2 = Libraire (gestion emprunts + retards)
-// 3 = Administrateur (accès total)
+//  1 = Utilisateur standard
+//  2 = Libraire
+//  3 = Administrateur
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  1: 'User',
-  2: 'Librarian',
-  3: 'Admin'
+  1: 'Utilisateur',
+  2: 'Libraire',
+  3: 'Administrateur'
 };
 
-// ── Utilisateur authentifié ─────────────────────────
+// ── Objet User tel que renvoyé par l'API ────────────
 export interface User {
   id: number;
   prenom: string;
   nom: string;
   email: string;
   tel?: string;
-  date_naissance?: Date;
-  role: UserRole; //--> switch to id_role
+  date_naissance?: string;  // ISO string "YYYY-MM-DD"
+  role: UserRole;           // ← champ rôle de l'API
 }
 
-// ── Payload JWT simulé ──────────────────────────────
-export interface AuthPayload {
-  sub: number;        // user id
+// ── Payload décodé depuis le JWT ────────────────────
+export interface JwtPayload {
+  sub: number;       // id utilisateur
   email: string;
-  role: UserRole;
-  iat: number;        // issued at
-  exp: number;        // expiration
+  role: UserRole;    // rôle
+  iat: number;       // issued at (timestamp)
+  exp: number;       // expiration (timestamp)
 }
 
-// ── Réponse de l'API login ──────────────────────────
+// ── Réponse de l'endpoint POST /api/auth/login ──────
+// ⚠️  Adapter selon ce que ton API renvoie réellement
+//     Option A : { token: string, user: User }
+//     Option B : { access_token: string }  (sans user)
+//     Option C : cookie httpOnly (pas de token visible)
 export interface LoginResponse {
-  token: string;
-  user: User;
+  token: string;    // ← renommer en access_token si besoin
+  user?: User;      // ← optionnel si l'API ne renvoie pas le user directement
 }
 
-// ── Formulaires ─────────────────────────────────────
+// ── Corps du POST /api/auth/login ───────────────────
 export interface LoginForm {
   email: string;
-  password: string;
+  password: string;   // ← renommer en mot_de_passe si l'API l'attend ainsi
 }
 
+// ── Corps du POST /api/auth/register ────────────────
 export interface RegisterForm {
-  firstName: string;
-  lastName: string;
+  prenom: string;
+  nom: string;
   email: string;
   password: string;
-  phone?: string;
-  birthDate?: string;
+  tel?: string;
+  date_naissance?: string;
 }
-
