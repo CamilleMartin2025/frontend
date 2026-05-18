@@ -6,6 +6,7 @@ import { BookService } from '../../../services/book.service';
 import { AuthService } from '../../../services/authentification.service';
 import { Book, Loan, Review, User, UserRole, ROLE_LABELS } from '../../../models/model';
 import { Observable } from 'rxjs';
+import { LoanService } from '../../../services/loan.service';
 
 type AdminTab = 'emprunts' | 'retards' | 'avis' | 'stats' | 'catalogue' | 'utilisateurs' | 'mon-espace';
 
@@ -62,18 +63,17 @@ export class MySpaceAdminComponent implements OnInit {
   renewSuccess: number | null = null;
 
   user: User = {
-    createdAt: new Date(),
     id: 0,
-    firstName: 'Admin',
-    lastName: 'Bibliothèque',
+    prenom: 'Admin',
+    nom: 'Bibliothèque',
     email: 'admin@quartier-solidaire.fr',
-    phone: '02 99 00 00 00',
-    birthDate: new Date('1985-06-10'),
+    tel: '02 99 00 00 00',
+    date_naissance: new Date('1985-06-10'),
     role: 3,
   };
   userEdit: User = { ...this.user };
 
-  myLoans: Loan[] = [];
+  loans!: Loan[];
   books!: Book[];
 
   // ── Demandes d'emprunts / prolongements ──
@@ -96,6 +96,7 @@ export class MySpaceAdminComponent implements OnInit {
   constructor(
     private bookService: BookService,
     private authService: AuthService,
+    private loanService: LoanService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -114,52 +115,56 @@ export class MySpaceAdminComponent implements OnInit {
   //  MON ESPACE
   // ─────────────────────────────────────────
   private loadMyLoans(): void {
-    this.bookService.getAll().subscribe((books) => {
-      this.books = books;
-
-      this.myLoans = [
-        {
-          id: 1,
-          book: books[0],
-          dueDate: new Date('2026-05-20'),
-          daysLeft: 8,
-          isLate: false,
-        },
-        {
-          id: 2,
-          book: books[6],
-          dueDate: new Date('2026-05-05'),
-          daysLeft: -7,
-          isLate: true,
-        },
-      ];
+    this.loans = [];
+    this.loanService.getByUserId(this.user.id).subscribe({
+      next: (data) => {
+        // @ts-ignore
+        this.loans = data || [];
+      },
+      error: (err) => {
+        console.error(err);
+        this.loans = [];
+      }
     });
   }
 
   getLoanStatus(loan: Loan): 'late' | 'urgent' | 'ok' {
-    if (loan.isLate) return 'late';
-    if (loan.daysLeft <= 5) return 'urgent';
+    const now = new Date().getTime();
+    const due = new Date(loan.date_retour_prevu).getTime();
+
+    if (due < now) return 'late';
+
+    const diffDays = (due - now) / (1000 * 60 * 60 * 24);
+
+    if (diffDays <= 5) return 'urgent';
+
     return 'ok';
   }
 
   getLoanLabel(loan: Loan): string {
-    return loan.isLate ? 'En retard' : `J-${loan.daysLeft}`;
+    let isLate = false;
+    const now = new Date().getTime();
+    const due = new Date(loan.date_retour_prevu).getTime();
+    if (due < now){
+      isLate = true;
+    }
+    const diffDays = (due - now) / (1000 * 60 * 60 * 24);
+    if(this.getLoanStatus(loan) == 'late'){
+      return isLate ? 'En retard' : `J-${diffDays}`;
+    }
+    return '';
   }
 
-  onRenewMyLoan(loan: Loan): void {
-    loan.dueDate = new Date(loan.dueDate.getTime() + 14 * 86400000);
-    loan.daysLeft += 14;
-    loan.isLate = false;
-    this.myLoans = [...this.myLoans];
+  onRenew(loan: Loan): void {
+    loan.date_retour_prevu = new Date(loan.date_retour_prevu.getTime() + 14 * 86400000);
+    this.loans = [...this.loans]; // nouveau tableau → Angular détecte le changement
     this.renewSuccess = loan.id;
-    setTimeout(() => {
-      this.renewSuccess = null;
-      this.cdr.detectChanges();
-    }, 3000);
+    setTimeout(() => (this.renewSuccess = null), 3000);
   }
 
-  onReturnMyLoan(loan: Loan): void {
-    this.myLoans = this.myLoans.filter((l) => l.id !== loan.id);
+  onReturn(loan: Loan): void {
+    // @ts-ignore
+    this.loans = this.loans.filter((l) => l.id !== loan.id);
   }
 
   onEditToggle(): void {
@@ -177,6 +182,7 @@ export class MySpaceAdminComponent implements OnInit {
   bookColor(i: number): string {
     return ['#4a90d9', '#5cb87a', '#e07b3a'][i % 3];
   }
+
 
   // ─────────────────────────────────────────
   //  DEMANDES
@@ -434,7 +440,7 @@ export class MySpaceAdminComponent implements OnInit {
   // ─────────────────────────────────────────
   private loadStats(): void {
     this.bookService.getAll().subscribe((books) => {
-      const available = books.filter((b) => b.available).length;
+      const available = books.filter((b) => b.quantite > 0).length;
       const borrowed = books.length - available;
 
       this.stats = [
@@ -489,17 +495,17 @@ export class MySpaceAdminComponent implements OnInit {
       ];
 
       // Top 10 mieux notés
-      this.topRated = [...books].sort((a, b) => b.rating - a.rating).slice(0, 10);
+      this.topRated = [...books].sort((a, b) => b.note - a.note).slice(0, 10);
 
       // Top 10 plus empruntés
       this.topBorrowed = [...books]
-        .sort((a, b) => (b.available ? 0 : 1) - (a.available ? 0 : 1) || b.rating - a.rating)
+        .sort((a, b) => (b.quantite ? 0 : 1) - (a.quantite ? 0 : 1) || b.note - a.note)
         .slice(0, 10);
 
       // Répartition par genre
       const genreMap = new Map<string, number>();
 
-      books.forEach((b) => b.genre.forEach((g) => genreMap.set(g, (genreMap.get(g) ?? 0) + 1)));
+      books.forEach((b) => b.categorie.forEach((g) => genreMap.set(g, (genreMap.get(g) ?? 0) + 1)));
 
       const total = [...genreMap.values()].reduce((s, v) => s + v, 0);
 
@@ -527,13 +533,14 @@ export class MySpaceAdminComponent implements OnInit {
   catalogueError = '';
 
   newBook: Omit<Book, 'id'> = {
-    title: '',
-    author: '',
-    description: '',
-    genre: [],
-    rating: 0,
-    available: true,
-    date: new Date('2026-05-05'),
+    titre: '',
+    auteur: '',
+    resume: '',
+    categorie: [],
+    note: 0,
+    quantite: 0,
+    date_ajout: new Date('2026-05-05'),
+    isbn: '',
   };
   newBookGenresRaw = ''; // saisie libre séparée par virgules
 
@@ -546,7 +553,7 @@ export class MySpaceAdminComponent implements OnInit {
   onAddBook(): void {
     this.catalogueError = '';
 
-    if (!this.newBook.title.trim() || !this.newBook.author.trim()) {
+    if (!this.newBook.titre.trim() || !this.newBook.auteur.trim()) {
       this.catalogueError = 'Titre et auteur sont obligatoires.';
       return;
     }
@@ -556,9 +563,9 @@ export class MySpaceAdminComponent implements OnInit {
       .map((g) => g.trim())
       .filter((g) => g.length > 0);
 
-    this.bookService.addBook({ ...this.newBook, genre: genres }).subscribe((book) => {
+    this.bookService.addBook({ ...this.newBook, categorie: genres }).subscribe((book) => {
       // message succès avec vrai Book
-      this.catalogueSuccess = `"${book.title}" ajouté avec succès.`;
+      this.catalogueSuccess = `"${book.titre}" ajouté avec succès.`;
 
       // reload catalogue
       this.bookService.getAll().subscribe((books) => {
@@ -580,22 +587,24 @@ export class MySpaceAdminComponent implements OnInit {
     this.deleteConfirmId = null;
   }
 
-  toggleAvailability(book: Book): void {
-    this.bookService.updateBook(book.id, { available: !book.available });
-    this.bookService.getAll().subscribe((books) => {
-      this.catalogueBooks = books;
-    });
-  }
+  //  TODO change to setQuantity with +1 or -1 if returned or borrowed
+  // toggleAvailability(book: Book): void {
+  //   this.bookService.updateBook(book.id, { quantite: !book.quantite });
+  //   this.bookService.getAll().subscribe((books) => {
+  //     this.catalogueBooks = books;
+  //   });
+  // }
 
   private resetNewBook(): void {
     this.newBook = {
-      title: '',
-      author: '',
-      description: '',
-      genre: [],
-      rating: 0,
-      available: true,
-      date: new Date(),
+      titre: '',
+      auteur: '',
+      resume: '',
+      categorie: [],
+      note: 0,
+      quantite: 1,
+      date_ajout: new Date(),
+      isbn: '',
     };
     this.newBookGenresRaw = '';
   }
@@ -615,8 +624,8 @@ export class MySpaceAdminComponent implements OnInit {
     return this.users.filter(
       (u) =>
         !q ||
-        u.firstName.toLowerCase().includes(q) ||
-        u.lastName.toLowerCase().includes(q) ||
+        u.prenom.toLowerCase().includes(q) ||
+        u.nom.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q),
     );
   }
@@ -630,7 +639,7 @@ export class MySpaceAdminComponent implements OnInit {
     const result = this.authService.updateUserRole(user.id, newRole);
     if (result.success) {
       this.loadUsers();
-      this.userSuccess = `Rôle de ${user.firstName} mis à jour.`;
+      this.userSuccess = `Rôle de ${user.prenom} mis à jour.`;
       setTimeout(() => (this.userSuccess = ''), 3000);
     } else {
       this.userError = result.error ?? 'Erreur.';
@@ -642,7 +651,7 @@ export class MySpaceAdminComponent implements OnInit {
     const result = this.authService.deleteUser(user.id);
     if (result.success) {
       this.loadUsers();
-      this.userSuccess = `Compte de ${user.firstName} ${user.lastName} supprimé.`;
+      this.userSuccess = `Compte de ${user.prenom} ${user.nom} supprimé.`;
       setTimeout(() => (this.userSuccess = ''), 3000);
     } else {
       this.userError = result.error ?? 'Erreur.';
@@ -654,3 +663,4 @@ export class MySpaceAdminComponent implements OnInit {
     return `role-badge role-${role}`;
   }
 }
+

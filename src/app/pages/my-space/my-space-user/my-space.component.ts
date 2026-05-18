@@ -31,10 +31,21 @@ export class MySpaceComponent {
 
   userEdit: User = { ...this.user };
 
-  loans!: Observable<Loan>;
+  // @ts-ignore
+  loans: [];
 
   ngOnInit(): void {
-    this.loans = this.loanService.getByUserId(this.user.id);
+    this.loans = [];
+    this.loanService.getByUserId(this.user.id).subscribe({
+      next: (data) => {
+        // @ts-ignore
+        this.loans = data || [];
+      },
+      error: (err) => {
+        console.error(err);
+        this.loans = [];
+      },
+    });
   }
 
   getLoanStatus(loan: Loan): 'late' | 'urgent' | 'ok' {
@@ -54,13 +65,14 @@ export class MySpaceComponent {
     let isLate = false;
     const now = new Date().getTime();
     const due = new Date(loan.date_retour_prevu).getTime();
-    if (due < now){
+    if (due < now) {
       isLate = true;
     }
     const diffDays = (due - now) / (1000 * 60 * 60 * 24);
-    if(this.getLoanStatus(loan) == 'late'){
+    if (this.getLoanStatus(loan) == 'late') {
       return isLate ? 'En retard' : `J-${diffDays}`;
     }
+    return '';
   }
 
   onRenew(loan: Loan): void {
@@ -71,6 +83,7 @@ export class MySpaceComponent {
   }
 
   onReturn(loan: Loan): void {
+    // @ts-ignore
     this.loans = this.loans.filter((l) => l.id !== loan.id);
   }
 

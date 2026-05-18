@@ -18,7 +18,7 @@ export interface Loan {
   date_emprunt: Date;
   date_retour_prevu: Date;
   date_retour_effectif: Date; //--> daysLeft calculated effectif-emprunt
-  // isLate: boolean; --> isLate if Date today > date_retour_prevu
+  isLate: boolean; //--> isLate if Date today > date_retour_prevu
 }
 
 export interface Reservation {

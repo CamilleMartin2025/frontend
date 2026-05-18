@@ -2,9 +2,9 @@
 
   <!-- En-tête utilisateur -->
   <div class="user-header">
-    <div class="user-avatar">{{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}</div>
+    <div class="user-avatar">{{ user.prenom.charAt(0) }}{{ user.nom.charAt(0) }}</div>
     <div>
-      <h1 class="user-name">{{ user.firstName }} {{ user.lastName }}</h1>
+      <h1 class="user-name">{{ user.prenom }} {{ user.nom }}</h1>
       <p class="user-section-label">MES EMPRUNTS</p>
     </div>
   </div>
@@ -46,7 +46,7 @@
       <div class="loan-date">
         <span class="loan-date-label">Retour le</span>
         <span class="loan-date-value" [class.date-late]="loan.isLate">
-          {{ loan.dueDate | date:'d MMMM yyyy' : '' : 'fr' }}
+          {{ loan.date_retour_prevu | date:'d MMMM yyyy' : '' : 'fr' }}
         </span>
       </div>
 
@@ -91,11 +91,11 @@
       <div class="edit-grid">
         <div class="form-group">
           <label class="form-label">Prénom</label>
-          <input type="text" class="form-input" [(ngModel)]="userEdit.firstName" />
+          <input type="text" class="form-input" [(ngModel)]="userEdit.prenom" />
         </div>
         <div class="form-group">
           <label class="form-label">Nom</label>
-          <input type="text" class="form-input" [(ngModel)]="userEdit.lastName" />
+          <input type="text" class="form-input" [(ngModel)]="userEdit.nom" />
         </div>
         <div class="form-group">
           <label class="form-label">Email</label>
@@ -103,7 +103,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Téléphone</label>
-          <input type="tel" class="form-input" [(ngModel)]="userEdit.phone" />
+          <input type="tel" class="form-input" [(ngModel)]="userEdit.tel" />
         </div>
       </div>
       <div class="edit-actions">
