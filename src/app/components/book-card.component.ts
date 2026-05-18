@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Book } from '../models/book.model';
+import { Book } from '../models/model';
 
 @Component({
   selector: 'app-book-card',
@@ -11,7 +11,7 @@ import { Book } from '../models/book.model';
     <div class="book-card">
       <a [routerLink]="['/book', book.id]" class="cover-link">
         <div class="book-cover">
-          <img [src]="book.cover" [alt]="book.title" loading="lazy" />
+<!--          <img [src]="book.cover" [alt]="book.title" loading="lazy" />-->
           <div class="cover-overlay">
             <span>Voir le livre</span>
           </div>

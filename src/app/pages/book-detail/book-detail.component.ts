@@ -2,13 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BookCardComponent } from '../../components/book-card.component';
+import { Book, Review } from '../../models/model';
+import { ReviewService } from '../../services/review.service';
 import { BookService } from '../../services/book.service';
-import { Book, Review } from '../../models/book.model';
 
 @Component({
   selector: 'app-book-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, BookCardComponent],
+  imports: [CommonModule, RouterLink],
   templateUrl: './book-detail.component.html',
   styleUrl: './book-detail.component.css',
 })
@@ -22,7 +23,7 @@ export class BookDetailComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router,
+    private reviewService: ReviewService,
     private bookService: BookService,
   ) {}
 
@@ -35,18 +36,27 @@ export class BookDetailComponent implements OnInit {
   }
 
   private loadBook(id: number): void {
-    this.borrowed = false;
-    this.book = this.bookService.getById(id);
+    this.bookService.getById(id).subscribe((book) => {
+      if (!book) {
+        this.notFound = true;
+        return;
+      }
 
-    if (!this.book) {
-      this.notFound = true;
-      return;
-    }
+      this.book = book;
+      this.notFound = false;
 
-    this.notFound = false;
-    this.reviews = this.bookService.getReviews(id);
-    this.similar = this.bookService.getSimilar(this.book);
-    this.sameAuthor = this.bookService.getByAuthor(this.book.author, id);
+      this.reviewService.getReviews(id).subscribe((reviews) => {
+        this.reviews = reviews;
+      });
+
+      this.bookService.getSimilar(book).subscribe((similar) => {
+        this.similar = similar;
+      });
+
+      this.bookService.getByAuthor(book.author, id).subscribe((sameAuthor) => {
+        this.sameAuthor = sameAuthor;
+      });
+    });
   }
 
   onBorrow(): void {

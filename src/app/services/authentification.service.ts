@@ -9,7 +9,7 @@ import {
   LoginForm,
   RegisterForm,
   LoginResponse,
-} from '../models/book.model';
+} from '../models/model';
 
 // ─────────────────────────────────────────────────────
 //  Clé de stockage du token en localStorage

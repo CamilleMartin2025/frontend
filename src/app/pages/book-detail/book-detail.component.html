@@ -16,7 +16,7 @@
     <!-- Couverture -->
     <div class="cover-col">
       <div class="cover-frame">
-        <img [src]="book.cover" [alt]="book.title" class="cover-img" />
+<!--        <img [src]="book.cover" [alt]="book.title" class="cover-img" />-->
       </div>
     </div>
 
@@ -80,7 +80,7 @@
     <div class="related-grid">
       <div class="related-card" *ngFor="let b of similar" [routerLink]="['/book', b.id]">
         <div class="related-cover">
-          <img [src]="b.cover" [alt]="b.title" />
+<!--          <img [src]="b.cover" [alt]="b.title" />-->
         </div>
         <p class="related-title">{{ b.title }}</p>
         <p class="related-author">{{ b.author }}</p>
@@ -97,7 +97,7 @@
     <div class="related-grid">
       <div class="related-card" *ngFor="let b of sameAuthor" [routerLink]="['/book', b.id]">
         <div class="related-cover">
-          <img [src]="b.cover" [alt]="b.title" />
+<!--          <img [src]="b.cover" [alt]="b.title" />-->
         </div>
         <p class="related-title">{{ b.title }}</p>
         <p class="related-author">{{ b.author }}</p>

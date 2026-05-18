@@ -2,7 +2,9 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Loan, User } from '../../../models/book.model';
+import { Loan, User } from '../../../models/model';
+import { LoanService } from '../../../services/loan.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-my-space',
@@ -15,88 +17,54 @@ export class MySpaceComponent {
   editMode = false;
   renewSuccess: number | null = null;
 
+  constructor(private loanService: LoanService) {}
+
   user: User = {
-    createdAt: new Date(),
     id: 0,
     role: 1,
-    firstName: 'Marie',
-    lastName: 'Dupont',
+    prenom: 'Marie',
+    nom: 'Dupont',
     email: 'marie.dupont@email.fr',
-    phone: '06 12 34 56 78',
-    birthDate: new Date('1990-04-15')
+    tel: '06 12 34 56 78',
+    date_naissance: new Date('1990-04-15'),
   };
 
   userEdit: User = { ...this.user };
 
-  // Données initialisées directement (pas dans ngOnInit) → pas de double cycle
-  loans: Loan[] = [
-    {
-      id: 1,
-      book: {
-        id: 13,
-        title: "L'Étranger",
-        author: 'Albert Camus',
-        cover: 'https://m.media-amazon.com/images/I/41pFLMkOqhL.jpg',
-        description: '',
-        genre: ['Classique'],
-        rating: 5,
-        available: false,
-        date: new Date(),
-      },
-      dueDate: new Date('2026-05-15'),
-      daysLeft: 3,
-      isLate: false,
-    },
-    {
-      id: 2,
-      book: {
-        id: 14,
-        title: 'Dune',
-        author: 'Frank Herbert',
-        cover: 'https://m.media-amazon.com/images/I/81ym3QUd3KL.jpg',
-        description: '',
-        genre: ['Science-fiction'],
-        rating: 5,
-        available: false,
-        date: new Date(),
-      },
-      dueDate: new Date('2026-05-01'),
-      daysLeft: -11,
-      isLate: true,
-    },
-    {
-      id: 3,
-      book: {
-        id: 15,
-        title: '1984',
-        author: 'George Orwell',
-        cover: 'https://m.media-amazon.com/images/I/71kxa2iBsNL.jpg',
-        description: '',
-        genre: ['Classique', 'Dystopie'],
-        rating: 5,
-        available: false,
-        date: new Date(),
-      },
-      dueDate: new Date('2026-05-28'),
-      daysLeft: 17,
-      isLate: false,
-    },
-  ];
+  loans!: Observable<Loan>;
+
+  ngOnInit(): void {
+    this.loans = this.loanService.getByUserId(this.user.id);
+  }
 
   getLoanStatus(loan: Loan): 'late' | 'urgent' | 'ok' {
-    if (loan.isLate) return 'late';
-    if (loan.daysLeft <= 5) return 'urgent';
+    const now = new Date().getTime();
+    const due = new Date(loan.date_retour_prevu).getTime();
+
+    if (due < now) return 'late';
+
+    const diffDays = (due - now) / (1000 * 60 * 60 * 24);
+
+    if (diffDays <= 5) return 'urgent';
+
     return 'ok';
   }
 
   getLoanLabel(loan: Loan): string {
-    return loan.isLate ? 'En retard' : `J-${loan.daysLeft}`;
+    let isLate = false;
+    const now = new Date().getTime();
+    const due = new Date(loan.date_retour_prevu).getTime();
+    if (due < now){
+      isLate = true;
+    }
+    const diffDays = (due - now) / (1000 * 60 * 60 * 24);
+    if(this.getLoanStatus(loan) == 'late'){
+      return isLate ? 'En retard' : `J-${diffDays}`;
+    }
   }
 
   onRenew(loan: Loan): void {
-    loan.dueDate = new Date(loan.dueDate.getTime() + 14 * 86400000);
-    loan.daysLeft += 14;
-    loan.isLate = false;
+    loan.date_retour_prevu = new Date(loan.date_retour_prevu.getTime() + 14 * 86400000);
     this.loans = [...this.loans]; // nouveau tableau → Angular détecte le changement
     this.renewSuccess = loan.id;
     setTimeout(() => (this.renewSuccess = null), 3000);

@@ -1,38 +1,41 @@
 export interface Book {
   id: number;
-  title: string;
-  author: string;
-  cover: string;
-  description: string;
-  genre: string[];
-  rating: number;
-  available: boolean;
-  date: Date;
+  titre: string;
+  auteur: string;
+  categorie: string[];
+  resume: string;
+  isbn: string;
+  quantite: number;
+  note: number;
+  // available: boolean; --> becomes if quantite > 0
+  date_ajout: Date;
 }
 
 export interface Loan {
   id: number;
-  book: Book;
-  dueDate: Date;
-  daysLeft: number;
-  isLate: boolean;
+  id_livre: number; //--> getById() in BookService
+  id_utilisateur: number; //--> getById() in AuthService
+  date_emprunt: Date;
+  date_retour_prevu: Date;
+  date_retour_effectif: Date; //--> daysLeft calculated effectif-emprunt
+  // isLate: boolean; --> isLate if Date today > date_retour_prevu
+}
+
+export interface Reservation {
+  id: number;
+  statut: string;
+  id_livre: number;
+  id_utilisateur: number;
 }
 
 export interface Review {
   id: number;
-  title: string;
-  body: string;
-  reviewerName: string;
-  date: Date;
-  rating: number;
-}
-
-export interface Event {
-  id: number;
-  title: string;
-  description: string;
-  image: string;
-  date: Date;
+  // title: string;
+  commentaire: string;
+  id_utilisateur: number; //--> get name from getById
+  date_publication: Date;
+  note: number;
+  id_livre: number;
 }
 
 // ── Rôles ──────────────────────────────────────────
@@ -50,13 +53,12 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 // ── Utilisateur authentifié ─────────────────────────
 export interface User {
   id: number;
-  firstName: string;
-  lastName: string;
+  prenom: string;
+  nom: string;
   email: string;
-  phone?: string;
-  birthDate?: Date;
-  role: UserRole;
-  createdAt: Date;
+  tel?: string;
+  date_naissance?: Date;
+  role: UserRole; //--> switch to id_role
 }
 
 // ── Payload JWT simulé ──────────────────────────────

@@ -22,24 +22,24 @@
       [class.loan-late]="loan.isLate"
     >
       <!-- Miniature : couverture si dispo -->
-      <div class="loan-thumb">
-        <img
-          *ngIf="loan.book.cover"
-          [src]="loan.book.cover"
-          [alt]="loan.book.title"
-        />
+<!--      <div class="loan-thumb">-->
+<!--        <img-->
+<!--&lt;!&ndash;          *ngIf="loan.book.cover"&ndash;&gt;-->
+<!--&lt;!&ndash;          [src]="loan.book.cover"&ndash;&gt;-->
+<!--          [alt]="loan.book.title"-->
+<!--        />-->
 
-        <div
-          *ngIf="!loan.book.cover"
-          class="loan-thumb-placeholder"
-          [style.background]="bookColor(i)"
-        ></div>
-      </div>
+<!--        <div-->
+<!--&lt;!&ndash;          *ngIf="!loan.book.cover"&ndash;&gt;-->
+<!--          class="loan-thumb-placeholder"-->
+<!--          [style.background]="bookColor(i)"-->
+<!--        ></div>-->
+<!--      </div>-->
 
       <!-- Titre / auteur -->
       <div class="loan-info">
-        <p class="loan-title">{{ loan.book.title }}</p>
-        <p class="loan-author">{{ loan.book.author }}</p>
+<!--        <p class="loan-title">{{ loan.book.title }}</p>-->
+<!--        <p class="loan-author">{{ loan.book.author }}</p>-->
       </div>
 
       <!-- Date de retour -->

@@ -2,8 +2,8 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Book } from '../../models/model';
 import { BookService } from '../../services/book.service';
-import { Book } from '../../models/book.model';
 
 type SortOption = 'title-asc' | 'title-desc' | 'author-asc' | 'rating-desc';
 
@@ -29,10 +29,11 @@ export class CatalogueComponent implements OnInit {
   constructor(private bookService: BookService) {}
 
   ngOnInit(): void {
-    const books = this.bookService.getAll();
-    // Mise à jour synchrone du signal → computed() se recalcule une seule fois
-    this.allBooksSignal.set(books);
-    this.allGenres = [...new Set(books.flatMap((b) => b.genre))].sort();
+    this.bookService.getAll().subscribe((books) => {
+      this.allBooksSignal.set(books);
+
+      this.allGenres = [...new Set(books.flatMap((b) => b.categorie))].sort();
+    });
   }
 
   // computed() dépend uniquement de signals → recalcul garanti et synchrone
@@ -46,16 +47,16 @@ export class CatalogueComponent implements OnInit {
     const result = books.filter((book) => {
       const matchSearch =
         !q ||
-        book.title.toLowerCase().includes(q) ||
-        book.author.toLowerCase().includes(q) ||
-        book.genre.some((g) => g.toLowerCase().includes(q));
+        book.titre.toLowerCase().includes(q) ||
+        book.auteur.toLowerCase().includes(q) ||
+        book.categorie.some((g) => g.toLowerCase().includes(q));
 
-      const matchGenre = genres.length === 0 || book.genre.some((g) => genres.includes(g));
+      const matchGenre = genres.length === 0 || book.categorie.some((g) => genres.includes(g));
 
       const matchAvail =
         avail === 'all' ||
-        (avail === 'available' && book.available) ||
-        (avail === 'unavailable' && !book.available);
+        (avail === 'available' && book.quantite > 0) ||
+        (avail === 'unavailable' && book.quantite == 0);
 
       return matchSearch && matchGenre && matchAvail;
     });
@@ -63,13 +64,13 @@ export class CatalogueComponent implements OnInit {
     return [...result].sort((a, b) => {
       switch (sort) {
         case 'title-asc':
-          return a.title.localeCompare(b.title, 'fr');
+          return a.titre.localeCompare(b.titre, 'fr');
         case 'title-desc':
-          return b.title.localeCompare(a.title, 'fr');
+          return b.titre.localeCompare(a.titre, 'fr');
         case 'author-asc':
-          return a.author.localeCompare(b.author, 'fr');
+          return a.auteur.localeCompare(b.auteur, 'fr');
         case 'rating-desc':
-          return b.rating - a.rating;
+          return b.note - a.note;
         default:
           return 0;
       }

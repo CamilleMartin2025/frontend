@@ -68,7 +68,7 @@
       <div class="requests-list">
         <div class="request-card" *ngFor="let req of filteredRequests" [class.approved]="req.status === 'approved'" [class.rejected]="req.status === 'rejected'">
           <div class="req-book-thumb">
-            <img [src]="req.book.cover" [alt]="req.book.title" />
+<!--            <img [src]="req.book.cover" [alt]="req.book.title" />-->
           </div>
           <div class="req-info">
             <p class="req-book-title">{{ req.book.title }}</p>
@@ -112,7 +112,7 @@
       <div class="late-list">
         <div class="late-card" *ngFor="let late of lateReturns">
           <div class="late-thumb">
-            <img [src]="late.book.cover" [alt]="late.book.title" />
+<!--            <img [src]="late.book.cover" [alt]="late.book.title" />-->
           </div>
           <div class="late-info">
             <p class="late-book">{{ late.book.title }}</p>
@@ -160,7 +160,7 @@
         <div class="review-card-admin" *ngFor="let review of filteredReviews" [class.approved]="review.status === 'approved'" [class.rejected]="review.status === 'rejected'">
           <div class="review-header">
             <div class="review-book-info">
-              <img [src]="review.book.cover" [alt]="review.book.title" class="review-book-thumb" />
+<!--              <img [src]="review.book.cover" [alt]="review.book.title" class="review-book-thumb" />-->
               <div>
                 <p class="review-book-title">{{ review.book.title }}</p>
                 <p class="review-book-author">{{ review.book.author }}</p>
@@ -221,7 +221,7 @@
           <div class="top-list">
             <div class="top-item" *ngFor="let book of topRated; let i = index">
               <span class="top-rank" [class.gold]="i===0" [class.silver]="i===1" [class.bronze]="i===2">{{ i + 1 }}</span>
-              <img [src]="book.cover" [alt]="book.title" class="top-thumb" />
+<!--              <img [src]="book.cover" [alt]="book.title" class="top-thumb" />-->
               <div class="top-info">
                 <p class="top-title">{{ book.title }}</p>
                 <p class="top-author">{{ book.author }}</p>
@@ -239,7 +239,7 @@
           <div class="top-list">
             <div class="top-item" *ngFor="let book of topBorrowed; let i = index">
               <span class="top-rank" [class.gold]="i===0" [class.silver]="i===1" [class.bronze]="i===2">{{ i + 1 }}</span>
-              <img [src]="book.cover" [alt]="book.title" class="top-thumb" />
+<!--              <img [src]="book.cover" [alt]="book.title" class="top-thumb" />-->
               <div class="top-info">
                 <p class="top-title">{{ book.title }}</p>
                 <p class="top-author">{{ book.author }}</p>
@@ -283,8 +283,8 @@
       <div class="loans-list">
         <div class="loan-item" *ngFor="let loan of myLoans; let i = index" [class.loan-late]="loan.isLate">
           <div class="loan-thumb">
-            <img *ngIf="loan.book.cover" [src]="loan.book.cover" [alt]="loan.book.title" />
-            <div *ngIf="!loan.book.cover" class="loan-thumb-placeholder" [style.background]="bookColor(i)"></div>
+<!--            <img *ngIf="loan.book.cover" [src]="loan.book.cover" [alt]="loan.book.title" />-->
+<!--            <div *ngIf="!loan.book.cover" class="loan-thumb-placeholder" [style.background]="bookColor(i)"></div>-->
           </div>
           <div class="loan-info">
             <p class="loan-title">{{ loan.book.title }}</p>
@@ -360,7 +360,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">URL de couverture</label>
-            <input type="url" class="form-input" [(ngModel)]="newBook.cover" placeholder="https://..." />
+<!--            <input type="url" class="form-input" [(ngModel)]="newBook.cover" placeholder="https://..." />-->
           </div>
           <div class="form-group">
             <label class="form-label">Catégories <span class="form-hint">(séparées par des virgules)</span></label>
@@ -391,8 +391,8 @@
       <div class="catalogue-admin-list">
         <div class="catalogue-admin-row" *ngFor="let book of catalogueBooks">
           <div class="cat-thumb">
-            <img *ngIf="book.cover" [src]="book.cover" [alt]="book.title" />
-            <div *ngIf="!book.cover" class="cat-thumb-placeholder">📖</div>
+<!--            <img *ngIf="book.cover" [src]="book.cover" [alt]="book.title" />-->
+<!--            <div *ngIf="!book.cover" class="cat-thumb-placeholder">📖</div>-->
           </div>
           <div class="cat-info">
             <p class="cat-title">{{ book.title }}</p>

@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/authentification.service';
-import { UserRole } from '../models/book.model';
+import { UserRole } from '../models/model';
 
 /**
  * Guard de base : vérifie que l'utilisateur est connecté.
