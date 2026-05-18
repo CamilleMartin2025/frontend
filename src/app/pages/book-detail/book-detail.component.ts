@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { BookCardComponent } from '../../components/book-card.component';
 import { Book, Review } from '../../models/model';
 import { ReviewService } from '../../services/review.service';
 import { BookService } from '../../services/book.service';
