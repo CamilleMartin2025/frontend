@@ -1,109 +1,113 @@
-<!-- Livre non trouvé -->
-<div class="container not-found" *ngIf="notFound">
-  <p class="not-found-emoji">📚</p>
-  <h1 class="not-found-title">Livre introuvable</h1>
-  <p class="not-found-sub">Ce livre n'existe pas dans notre catalogue.</p>
-  <a routerLink="/catalogue" class="btn-primary" style="margin-top: 20px; display:inline-block">
-    Retour au catalogue
-  </a>
-</div>
+<ng-container *ngIf="book$ | async as book; else loadingOrError">
+  
+  <div class="container detail-wrapper" *ngIf="!notFound">
 
-<!-- Détail du livre -->
-<ng-container *ngIf="book && !notFound">
-
-  <div class="container detail-wrapper">
-
-    <!-- Couverture -->
     <div class="cover-col">
       <div class="cover-frame">
-<!--        <img [src]="book.cover" [alt]="book.titre" class="cover-img" />-->
+        <!-- <img *ngIf="book.cover" [src]="book.cover" [alt]="book.titre" class="cover-img" /> -->
       </div>
     </div>
 
-    <!-- Infos -->
     <div class="info-col">
       <h1 class="book-title">{{ book.titre }}</h1>
       <p class="book-author">{{ book.auteur }}</p>
 
       <p class="availability"
          [class.available]="book.quantite > 0"
-         [class.unavailable]="book.quantite == 0">
-        {{ book.quantite == 0 ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
+         [class.unavailable]="book.quantite <= 0">
+        {{ book.quantite > 0 ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
       </p>
 
-      <div class="stars">
+      <div class="stars" *ngIf="book.note !== undefined && book.note !== null">
         <span *ngFor="let filled of starsArray(book.note)">{{ filled ? '★' : '☆' }}</span>
       </div>
 
-      <div class="book-description">
+      <div class="book-description" *ngIf="book.resume">
         <p *ngFor="let para of book.resume.split('\n\n')">{{ para }}</p>
       </div>
 
       <button
         class="btn-primary borrow-btn"
-        [disabled]="book.quantite == 0 || borrowed"
+        [disabled]="book.quantite <= 0 || borrowed"
         (click)="onBorrow()"
       >
-        {{ borrowed ? 'Emprunté ✓' : 'Emprunter' }}
+        {{ borrowed ? 'Emprunté ✓' : (book.quantite > 0 ? 'Emprunter' : 'Épuisé') }}
       </button>
 
-      <div class="genres">
+      <div class="genres" *ngIf="book.categorie">
         <span class="genre-tag">{{ book.categorie }}</span>
       </div>
     </div>
   </div>
 
-  <!-- Avis -->
-  <section class="container reviews-section" *ngIf="reviews.length > 0">
-    <h2 class="section-title">Derniers avis</h2>
-    <div class="reviews-grid">
-      <div class="review-card" *ngFor="let review of reviews">
-        <div class="review-stars">
-          <span *ngFor="let filled of starsArray(review.note)">{{ filled ? '★' : '☆' }}</span>
-        </div>
-        <p class="review-body">{{ review.commentaire }}</p>
-        <div class="review-meta">
-          <div class="reviewer-avatar">{{ review.id_utilisateur.toString().charAt(0) }}</div>
-          <div>
-            <p class="reviewer-name">{{ review.id_utilisateur}}</p>
+  <ng-container *ngIf="reviews$ | async as reviews">
+    <section class="container reviews-section" *ngIf="reviews.length > 0 && !notFound">
+      <h2 class="section-title">Derniers avis ({{ reviews.length }})</h2>
+      <div class="reviews-grid">
+        <div class="review-card" *ngFor="let review of reviews">
+          <div class="review-stars" *ngIf="review.note !== undefined">
+            <span *ngFor="let filled of starsArray(review.note)">{{ filled ? '★' : '☆' }}</span>
+          </div>
+          <p class="review-body" *ngIf="review.commentaire">{{ review.commentaire }}</p>
+          
+          <div class="review-meta">
+            <div class="reviewer-avatar">
+              {{ review.utilisateurId ? review.utilisateurId.toString().charAt(0) : 'U' }}
+            </div>
+            <div>
+              <p class="reviewer-name">Utilisateur #{{ review.utilisateurId }}</p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </ng-container>
 
-  <!-- Livres similaires -->
-  <section class="container related-section" *ngIf="similar.length > 0">
-    <h2 class="section-title">Les autres utilisateurs ont aussi emprunté</h2>
-    <div class="related-grid">
-      <div class="related-card" *ngFor="let b of similar" [routerLink]="['/book', b.id]">
-        <div class="related-cover">
-<!--          <img [src]="b.cover" [alt]="b.title" />-->
+  <ng-container *ngIf="similar$ | async as similar">
+    <section class="container related-section" *ngIf="similar.length > 0 && !notFound">
+      <h2 class="section-title">Les autres utilisateurs ont aussi emprunté</h2>
+      <div class="related-grid">
+        <div class="related-card" *ngFor="let b of similar" [routerLink]="['/book', b.id]">
+          <div class="related-cover">
+            <!-- <img *ngIf="b.cover" [src]="b.cover" [alt]="b.titre" /> -->
+          </div>
+          <p class="related-title">{{ b.titre }}</p>
+          <p class="related-author">{{ b.auteur }}</p>
+          <p [class.badge-available]="b.quantite > 0" [class.badge-unavailable]="b.quantite <= 0">
+            {{ b.quantite > 0 ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
+          </p>
         </div>
-        <p class="related-title">{{ b.titre }}</p>
-        <p class="related-author">{{ b.auteur }}</p>
-        <p [class.badge-available]="b.quantite > 0" [class.badge-unavailable]="b.quantite == 0">
-          {{ b.quantite == 0 ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
-        </p>
       </div>
-    </div>
-  </section>
+    </section>
+  </ng-container>
 
-  <!-- Du même auteur -->
-  <section class="container related-section" *ngIf="sameAuthor.length > 0">
-    <h2 class="section-title">Du même auteur</h2>
-    <div class="related-grid">
-      <div class="related-card" *ngFor="let b of sameAuthor" [routerLink]="['/book', b.id]">
-        <div class="related-cover">
-<!--          <img [src]="b.cover" [alt]="b.title" />-->
+  <ng-container *ngIf="sameAuthor$ | async as sameAuthor">
+    <section class="container related-section" *ngIf="sameAuthor.length > 0 && !notFound">
+      <h2 class="section-title">Du même auteur</h2>
+      <div class="related-grid">
+        <div class="related-card" *ngFor="let b of sameAuthor" [routerLink]="['/book', b.id]">
+          <div class="related-cover">
+            <!-- <img *ngIf="b.cover" [src]="b.cover" [alt]="b.titre" /> -->
+          </div>
+          <p class="related-title">{{ b.titre }}</p>
+          <p class="related-author">{{ b.auteur }}</p>
+          <p [class.badge-available]="b.quantite > 0" [class.badge-unavailable]="b.quantite <= 0">
+            {{ b.quantite > 0 ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
+          </p>
         </div>
-        <p class="related-title">{{ b.titre }}</p>
-        <p class="related-author">{{ b.auteur }}</p>
-        <p [class.badge-available]="b.quantite > 0" [class.badge-unavailable]="b.quantite == 0">
-          {{ b.quantite == 0 ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
-        </p>
       </div>
-    </div>
-  </section>
+    </section>
+  </ng-container>
 
 </ng-container>
+
+<ng-template #loadingOrError>
+  <div class="container not-found" *ngIf="notFound">
+    <p class="not-found-emoji">📚</p>
+    <h1 class="not-found-title">Livre introuvable</h1>
+    <p class="not-found-sub">Ce livre n'existe pas dans notre catalogue.</p>
+    <a routerLink="/catalogue" class="btn-primary" style="margin-top: 20px; display:inline-block">
+      Retour au catalogue
+    </a>
+  </div>
+</ng-template>

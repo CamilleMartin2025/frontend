@@ -36,40 +36,41 @@ export class LoginComponent {
   ) {}
 
   onLogin(): void {
-    this.loginError = '';
-    this.loginLoading = true;
+  this.loginError = '';
+  this.loginLoading = true;
 
-    if (!this.loginEmail || !this.loginPassword) {
-      this.loginError = 'Veuillez remplir tous les champs.';
-      this.loginLoading = false;
-      return;
-    }
-
-    this.loginLoading = true;
-
-    this.auth
-      .login({
-        email: this.loginEmail,
-        password: this.loginPassword,
-      })
-      .subscribe({
-        next: (user: User) => {
-          console.log(user);
-
-          this.loginLoading = false;
-        },
-
-        error: (err) => {
-          this.loginError = err.error?.message ?? 'Erreur de connexion.';
-          this.loginLoading = false;
-        },
-      });
-
-    // Redirection selon le rôle
-    if (this.auth.isAdmin()) this.router.navigate(['/admin']);
-    else if (this.auth.isLibraire()) this.router.navigate(['/libraire']);
-    else this.router.navigate(['/mon-espace']);
+  if (!this.loginEmail || !this.loginPassword) {
+    this.loginError = 'Veuillez remplir tous les champs.';
+    this.loginLoading = false;
+    return;
   }
+
+  const credentials = {
+    email: this.loginEmail,
+    password: this.loginPassword
+  };
+
+  this.auth.login(credentials).subscribe({
+    next: (response) => {
+      this.loginLoading = false;
+      console.log('Connexion validée ! Rôle de l’utilisateur :', this.auth.currentUser()?.role);
+
+      // LA REDIRECTION SE FAIT ICI, UNE FOIS LE TOKEN REÇU ET TRAITÉ
+      if (this.auth.isAdmin()) {
+        this.router.navigate(['/admin']);
+      } else if (this.auth.isLibraire()) {
+        this.router.navigate(['/libraire']);
+      } else {
+        this.router.navigate(['/mon-espace']);
+      }
+    },
+    error: (err) => {
+      console.error('Erreur de connexion', err);
+      this.loginError = 'Identifiants invalides ou serveur hors ligne.';
+      this.loginLoading = false;
+    }
+  });
+}
 
   onRegister(): void {
     this.registerError = '';

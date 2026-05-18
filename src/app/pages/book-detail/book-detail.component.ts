@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit,ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Book, Review } from '../../models/model';
 import { ReviewService } from '../../services/review.service';
 import { BookService } from '../../services/book.service';
+import { Observable, of } from 'rxjs';
+import { switchMap, tap, catchError, shareReplay} from 'rxjs/operators';
 
 @Component({
   selector: 'app-book-detail',
@@ -11,9 +13,15 @@ import { BookService } from '../../services/book.service';
   imports: [CommonModule, RouterLink],
   templateUrl: './book-detail.component.html',
   styleUrl: './book-detail.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BookDetailComponent implements OnInit {
-  book!: Book;
+  // On transforme l'objet en Observable
+  book$!: Observable<Book | undefined>;
+  reviews$!: Observable<Review[]>;
+  similar$!: Observable<Book[]>;
+  sameAuthor$!: Observable<Book[]>;
+
   reviews: Review[] = [];
   similar: Book[] = [];
   sameAuthor: Book[] = [];
@@ -23,72 +31,83 @@ export class BookDetailComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private reviewService: ReviewService,
-    private bookService: BookService,
+    private bookService: BookService
   ) {}
 
-  ngOnInit(): void {
-    // Recharger quand l'id change (navigation entre livres liés)
-    this.route.paramMap.subscribe((params) => {
-      const idParam = params.get('id');
-      if (!idParam) return;
+ngOnInit(): void {
+    //  on récupère le livre
+    this.book$ = this.route.paramMap.pipe(
+      switchMap((params) => {
+        const idParam = params.get('id');
+        if (!idParam) return of(undefined);
 
-      const id = Number(idParam);
-      if (isNaN(id)) {
-        this.notFound = true;
-        return;
-      }
-
-      this.loadBook(id);
-    });
-  }
-
-  private loadBook(id: number): void {
-    this.bookService.getById(id).subscribe({
-      next: (book) => {
-        if (!book) {
+        const id = Number(idParam);
+        if (isNaN(id)) {
           this.notFound = true;
-          return;
+          return of(undefined);
         }
 
-        this.book = book;
-        this.notFound = false;
+        return this.bookService.getById(id).pipe(
+          tap((book) => {
+            this.notFound = !book;
+          }),
+          catchError((err) => {
+            console.error('book error', err);
+            this.notFound = true;
+            return of(undefined);
+          })
+        );
+      }),
+      shareReplay(1) // Évite de re-déclencher la requête HTTP du livre pour chaque composant secondaire
+    );
 
-        this.reviewService.getReviews(id).subscribe({
-          next: (r) => (this.reviews = r),
-          error: (err) => console.error('reviews error', err),
-        });
+    // On lie dynamiquement les avis
+    this.reviews$ = this.route.paramMap.pipe(
+      switchMap((params) => {
+        const id = Number(params.get('id'));
+        return isNaN(id) ? of([]) : this.reviewService.getReviews(id);
+      }),
+      catchError((err) => {
+        console.error('reviews error', err);
+        return of([]);
+      })
+    );
 
-        this.bookService.getSimilar(book).subscribe({
-          next: (s) => (this.similar = s),
-          error: (err) => console.error('similar error', err),
-        });
+    // On lie les livres similaires
+    this.similar$ = this.book$.pipe(
+      switchMap((book) => {
+        if (!book) return of([]);
+        return this.bookService.getSimilar(book);
+      }),
+      catchError((err) => {
+        console.error('similar error', err);
+        return of([]);
+      })
+    );
 
-        this.bookService.getByAuthor(book.auteur, id).subscribe({
-          next: (a) => (this.sameAuthor = a),
-          error: (err) => console.error('author error', err),
-        });
-      },
-      error: (err) => {
-        console.error('book error', err);
-        this.notFound = true;
-      },
-    });
+    // On lie les livres du même auteur
+    this.sameAuthor$ = this.book$.pipe(
+      switchMap((book) => {
+        if (!book || !book.id) return of([]);
+        return this.bookService.getByAuthor(book.auteur, book.id);
+      }),
+      catchError((err) => {
+        console.error('author error', err);
+        return of([]);
+      })
+    );
   }
 
-  setBorrowQuantity(book: Book): void {
-    if (book.quantite > 0) {
-      book.quantite = book.quantite - 1;
+  starsArray(note: number): boolean[] {
+    const stars = [];
+    const safeNote = Math.min(Math.max(Math.round(note || 0), 0), 5);
+    for (let i = 1; i <= 5; i++) {
+      stars.push(i <= safeNote);
     }
+    return stars;
   }
 
   onBorrow(): void {
-    if (this.book?.quantite != 0) {
-      this.borrowed = true;
-      this.setBorrowQuantity(this.book);
-    }
-  }
-
-  starsArray(rating: number): boolean[] {
-    return Array.from({ length: 5 }, (_, i) => i < rating);
+    this.borrowed = true;
   }
 }

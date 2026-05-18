@@ -1,170 +1,149 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, catchError, throwError, map } from 'rxjs';
-import {
-  User,
-  UserRole,
-  LoginForm,
-  RegisterForm,
-  LoginResponse,
-  JwtPayload,
-} from '../models/model';
+import { Observable, tap, catchError, throwError } from 'rxjs';
+import { User, LoginForm, RegisterForm, UserRole } from '../models/model';
 
-// ─────────────────────────────────────────────────────
-//  ⚠️  ENDPOINTS — adapter selon ton API
-// ─────────────────────────────────────────────────────
+const TOKEN_KEY = 'bookhub_token';
+const USER_KEY = 'bookhub_user';
+
 const API = {
-  login: 'http://localhost:8080/api/auth', // POST  → LoginResponse
-  register: 'http://localhost:8080/api/auth', // POST  → LoginResponse
+  login: 'http://localhost:8080/api/auth/login', // POST  → LoginResponse
+  register: 'http://localhost:8080/api/auth/register', // POST  → LoginResponse
   me: 'http://localhost:8080/api/auth', // GET   → User  (si dispo)
   users: 'http://localhost:8080/api/auth', // GET   → User[]
 };
 
-// ─────────────────────────────────────────────────────
-//  Clés localStorage
-// ─────────────────────────────────────────────────────
-const TOKEN_KEY = 'bookhub_token';
-const USER_KEY = 'bookhub_user';
-
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  // ── État réactif ───────────────────────────────────
-  private currentUserSignal = signal<User | null>(this.loadUserFromStorage());
+  private loginUrl = 'http://localhost:8080/api/auth/login';
+  private registerUrl = 'http://localhost:8080/api/auth/register';
 
+  private currentUserSignal = signal<User | null>(this.loadUserFromStorage());
   currentUser = this.currentUserSignal.asReadonly();
+  isAuthenticated = computed(() => this.currentUser() !== null);
   isLoggedIn = computed(() => this.currentUserSignal() !== null);
 
-  userRole = computed(() => this.currentUserSignal()?.role ?? null);
+  constructor(private http: HttpClient, private router: Router) {}
 
-  // Raccourcis rôles — logique inclusive (admin a aussi les droits libraire)
-  isUser = computed(() => {
-    const r = this.currentUserSignal()?.role;
-    return r === 1 || r === 2 || r === 3;
-  });
-  isLibraire = computed(() => {
-    const r = this.currentUserSignal()?.role;
-    return r === 2 || r === 3;
-  });
-  isAdmin = computed(() => this.currentUserSignal()?.role === 3);
-
-  constructor(
-    private http: HttpClient,
-    private router: Router,
-  ) {}
-
-  // ═══════════════════════════════════════════════════
-  //  CONNEXION
-  // ═══════════════════════════════════════════════════
-  login(form: LoginForm): Observable<User> {
-    return this.http.post<LoginResponse>(API.login, form).pipe(
-      // L'API renvoie { token, user } — Option B (décodage JWT) en fallback
-      // si user est absent de la réponse
-
+  login(credentials: LoginForm): Observable<any> {
+    return this.http.post<any>(this.loginUrl, credentials).pipe(
       tap((response) => {
-        // Stocker le token
-        const token = response.token;
-        localStorage.setItem(TOKEN_KEY, token);
+        const token = response?.token || response;
 
-        // Récupérer le user
-        if (response.user) {
-          localStorage.setItem(USER_KEY, JSON.stringify(response.user));
-          this.currentUserSignal.set(response.user);
-        } else {
-          // Fallback : décoder le JWT si user absent de la réponse
+        if (token && typeof token === 'string') {
+          localStorage.setItem(TOKEN_KEY, token);
+
+          // 1. On décode le JWT pour extraire les informations cachées dedans
           const payload = this.decodeJwt(token);
-          if (payload) {
-            // On reconstruit un User partiel depuis le JWT
-            const partialUser: User = {
-              id: payload.sub,
-              email: payload.email,
-              role: payload.role,
-              prenom: '',
-              nom: '',
-            };
-            localStorage.setItem(USER_KEY, JSON.stringify(partialUser));
-            this.currentUserSignal.set(partialUser);
+          console.log('Payload du JWT décodé :', payload);
 
-            // Optionnel : récupérer le profil complet en arrière-plan
-            this.fetchMe().subscribe();
-          }
+          // On reconstruit l'utilisateur grâce aux clés du JWT
+          const user: User = {
+            id: payload?.id || 0,
+            email: payload?.sub || credentials.email, // 'sub' contient l'identifiant/email dans un JWT standard
+            prenom: payload?.prenom || '',
+            nom: payload?.nom || '',
+            // S'adapte si Spring envoie un tableau ou une string (ex: 'ROLE_ADMIN' ou 'ADMIN')
+            role: this.extractRole(payload)
+          };
+
+          localStorage.setItem(USER_KEY, JSON.stringify(user));
+          this.currentUserSignal.set(user); // On met à jour le Signal Angular
         }
       }),
-
-      // Retourner le User pour que le composant puisse réagir
-      map(() => this.currentUserSignal()!),
-
-      catchError((err) => {
-        const message =
-          err.error?.message ?? err.error?.detail ?? 'Email ou mot de passe incorrect.';
-        return throwError(() => new Error(message));
-      }),
+      catchError((err) => throwError(() => err))
     );
   }
 
-  // ═══════════════════════════════════════════════════
-  //  INSCRIPTION
-  // ═══════════════════════════════════════════════════
-  register(form: RegisterForm): Observable<User> {
-    return this.http.post<LoginResponse>(API.register, form).pipe(
-      tap((response) => {
-        const token = response.token;
-        localStorage.setItem(TOKEN_KEY, token);
-
-        if (response.user) {
-          localStorage.setItem(USER_KEY, JSON.stringify(response.user));
-          this.currentUserSignal.set(response.user);
-        } else {
-          const payload = this.decodeJwt(token);
-          if (payload) {
-            const partialUser: User = {
-              id: payload.sub,
-              email: payload.email,
-              role: payload.role,
-              prenom: form.prenom,
-              nom: form.nom,
-              tel: form.tel,
-            };
-            localStorage.setItem(USER_KEY, JSON.stringify(partialUser));
-            this.currentUserSignal.set(partialUser);
-          }
-        }
-      }),
-      map(() => this.currentUserSignal()!),
-      catchError((err) => {
-        const message = err.error?.message ?? "Erreur lors de l'inscription.";
-        return throwError(() => new Error(message));
-      }),
-    );
+  register(userForm: RegisterForm): Observable<User> {
+    return this.http.post<User>(this.registerUrl, userForm);
   }
 
-  // ═══════════════════════════════════════════════════
-  //  RÉCUPÉRER LE PROFIL COMPLET (/api/auth/me)
-  //  ⚠️  Supprimer si ton API n'a pas cet endpoint
-  // ═══════════════════════════════════════════════════
-  fetchMe(): Observable<User> {
-    return this.http.get<User>(API.me, { headers: this.authHeaders() }).pipe(
-      tap((user) => {
-        localStorage.setItem(USER_KEY, JSON.stringify(user));
-        this.currentUserSignal.set(user);
-      }),
-      catchError((err) => {
-        // Si /me échoue (token expiré, etc.) → déconnexion propre
-        if (err.status === 401) this.logout();
-        return throwError(() => err);
-      }),
-    );
+  /**
+   * Helper pour extraire proprement le rôle du JWT peu importe le format de Spring
+   */
+  private extractRole(payload: any): string {
+    if (!payload) return 'LECTEUR';
+
+    // Récupère la clé contenant le rôle (souvent 'role', 'roles', ou 'authorities')
+    const rawRole = payload.role || payload.roles || payload.authorities || 'LECTEUR';
+
+    // Si Spring envoie un tableau (ex: ["ROLE_ADMIN"]), on prend le premier
+    const roleString = Array.isArray(rawRole) ? rawRole[0] : rawRole;
+
+    // Nettoyage du préfixe "ROLE_" si Spring l'a ajouté
+    return roleString.replace('ROLE_', '');
   }
 
-  // ═══════════════════════════════════════════════════
-  //  DÉCONNEXION
-  // ═══════════════════════════════════════════════════
+  /**
+   * Décode le payload d'un JWT sans vérifier la signature
+   */
+  decodeJwt(token: string): any {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error('Erreur lors du décodage du JWT', e);
+      return null;
+    }
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem(TOKEN_KEY);
+  }
+
+  isAdmin(): boolean {
+    const user = this.currentUser();
+    return user?.role === 'ADMIN';
+  }
+
+  isLibraire(): boolean {
+    const user = this.currentUser();
+    return user?.role === 'BIBLIOTHECAIRE' ;
+  }
+
+  isUser(): boolean {
+    const user = this.currentUser();
+    return user?.role === 'LECTEUR' || user?.role === 'USER'; // S'adapte selon ton libellé exact
+  }
+
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     this.currentUserSignal.set(null);
     this.router.navigate(['/login']);
   }
+
+  isTokenValid(): boolean {
+    const token = this.getToken();
+    if (!token) return false;
+    const payload = this.decodeJwt(token);
+    if (!payload) return false;
+    return payload.exp > Date.now() / 1000;
+  }
+
+  private loadUserFromStorage(): User | null {
+    try {
+      if (!this.isTokenValid()) {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        return null;
+      }
+      const raw = localStorage.getItem(USER_KEY);
+      return raw ? (JSON.parse(raw) as User) : null;
+    } catch {
+      return null;
+    }
+  }
+
 
   // ═══════════════════════════════════════════════════
   //  GESTION UTILISATEURS (admin only)
@@ -222,15 +201,10 @@ export class AuthService {
   /** L'utilisateur a-t-il au moins ce niveau de rôle ? */
   hasRole(minRole: UserRole): boolean {
     const role = this.currentUserSignal()?.role;
-    return role !== undefined && role >= minRole;
+    return role !== undefined;
   }
 
-  // ═══════════════════════════════════════════════════
-  //  TOKEN
-  // ═══════════════════════════════════════════════════
-  getToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
-  }
+
 
   /** Headers HTTP avec le token Bearer */
   authHeaders(): HttpHeaders {
@@ -241,43 +215,10 @@ export class AuthService {
     });
   }
 
-  /** Le token stocké est-il encore valide (non expiré) ? */
-  isTokenValid(): boolean {
-    const token = this.getToken();
-    if (!token) return false;
-    const payload = this.decodeJwt(token);
-    if (!payload) return false;
-    return payload.exp > Date.now() / 1000;
-  }
+
 
   // ═══════════════════════════════════════════════════
   //  HELPERS PRIVÉS
   // ═══════════════════════════════════════════════════
 
-  /** Charge l'utilisateur depuis localStorage au démarrage de l'app */
-  private loadUserFromStorage(): User | null {
-    try {
-      if (!this.isTokenValid()) {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
-        return null;
-      }
-      const raw = localStorage.getItem(USER_KEY);
-      return raw ? (JSON.parse(raw) as User) : null;
-    } catch {
-      return null;
-    }
-  }
-
-  /** Décode le payload d'un JWT sans vérifier la signature */
-  private decodeJwt(token: string): JwtPayload | null {
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) return null;
-      const decoded = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
-      return JSON.parse(decoded) as JwtPayload;
-    } catch {
-      return null;
-    }
-  }
 }

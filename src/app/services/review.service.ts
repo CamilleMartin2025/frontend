@@ -18,7 +18,9 @@ export class ReviewService {
   }
 
   getReviews(bookId: number): Observable<Review[]> {
-    return this.getAll().pipe(map((reviews) => reviews.filter((r) => r.id_livre === bookId)));
+    return this.getAll().pipe(map((reviews) => {
+      console.log(reviews)
+      return reviews.filter((r) => r.livreId === bookId)}));
   }
 
   setBookNote(bookId: number): void {
@@ -26,7 +28,7 @@ export class ReviewService {
       .pipe(
         map((reviews) => {
           const notes = reviews
-            .filter((r) => r.id_livre === bookId)
+            .filter((r) => r.livreId === bookId)
             .map((r) => r.note)
             .filter((n) => n != null);
 

@@ -15,7 +15,7 @@ export class BookService {
   }
 
   getById(id: number): Observable<Book | undefined> {
-    return this.getAll().pipe(map((books) => books.find((b) => b.id === id)));
+    return this.http.get<Book>(this.apiBookUrl + "/" + id)
   }
 
   // Livres du même auteur (hors livre courant)
@@ -33,9 +33,11 @@ export class BookService {
 
     return this.getAll().pipe(
       map((books) =>
-        books
+        {
+          console.log(books)
+          return books
           .filter((b) => b.id !== book.id && b.categorie == book.categorie)
-          .slice(0, 3),
+          .slice(0, 3)}
       ),
     );
   }

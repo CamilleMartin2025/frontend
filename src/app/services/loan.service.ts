@@ -20,8 +20,8 @@ export class LoanService {
     return this.http.get<Loan[]>(this.apiLoanUrl);
   }
 
-  getByUserId(userId: number): Observable<Loan[]> {
-    return this.http.get<Loan[]>(`${this.apiLoanUrl}?userId=${userId}`);
+  getByUserId(): Observable<Loan[]> {
+    return this.http.get<Loan[]>(`${this.apiLoanUrl}/my`);
     // Alternative si pas de filtre API :
     // return this.getAll().pipe(
     //   map(loans => loans.filter(l => l.id_utilisateur === userId))
@@ -38,24 +38,24 @@ export class LoanService {
    */
   enrich(loan: Loan): Observable<LoanView> {
     const today = new Date();
-    const dueDate = new Date(loan.date_retour_prevu);
+    const dueDate = new Date(loan.dateRetourPrevu);
     const diffMs = dueDate.getTime() - today.getTime();
     const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
     // getById renvoie Observable<Book | undefined> → on l'attend avant de construire LoanView
     // @ts-ignore
-    return this.bookService.getById(loan.id_livre).pipe(
+   
+    return this.bookService.getById(loan.livreId).pipe(
       map((book: Book | undefined) => ({
         id: loan.id,
-        id_livre: loan.id_livre,
-        id_utilisateur: loan.id_utilisateur,
-        date_emprunt: new Date(loan.date_emprunt),
+        livreId: loan.livreId,
+        utilisateurId: loan.utilisateurId,
+        date_emprunt: new Date(loan.dateEmprunt),
         date_retour_prevu: dueDate,
-        date_retour_effectif: loan.date_retour_effectif
-          ? new Date(loan.date_retour_effectif)
+        date_retour_effectif: loan.dateRetourEffectif
+          ? new Date(loan.dateRetourEffectif)
           : null,
         daysLeft,
-        isLate: daysLeft < 0 && !loan.date_retour_effectif,
+        isLate: daysLeft < 0 && !loan.dateRetourEffectif,
         book, // undefined si non trouvé → géré dans le template avec ?.
       })),
     );
@@ -75,8 +75,8 @@ export class LoanService {
   // ── Méthodes prêtes pour les templates ────────────
 
   /** Emprunts enrichis d'un utilisateur → Observable<LoanView[]> */
-  getViewsByUserId(userId: number): Observable<LoanView[]> {
-    return this.getByUserId(userId).pipe(switchMap((loans) => this.enrichAll(loans)));
+  getViewsByUserId(): Observable<LoanView[]> {
+    return this.getByUserId().pipe(switchMap((loans) => this.enrichAll(loans)));
   }
 
   /** Tous les emprunts enrichis (admin/libraire) */

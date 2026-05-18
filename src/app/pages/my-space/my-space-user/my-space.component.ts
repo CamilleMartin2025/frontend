@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { Loan, LoanView, User } from '../../../models/model';
 import { LoanService } from '../../../services/loan.service';
 import { AuthService } from '../../../services/authentification.service';
-import { switchMap } from 'rxjs';
+import { switchMap, Observable, map } from 'rxjs';
 
 @Component({
   selector: 'app-my-space',
@@ -28,30 +28,26 @@ export class MySpaceComponent {
   userEdit!: User;
 
   // Typé LoanView → toutes les propriétés calculées disponibles dans le template
-  loans: LoanView[] = [];
+  loans$!: Observable<LoanView[]>;
   loansLoading = true;
 
   // Propriété pour comparaison de dates dans le template
   today = new Date();
 
   ngOnInit(): void {
-    const current = this.authService.currentUser();
+   const current = this.authService.currentUser();
     if (current) {
       this.user = { ...current };
       this.userEdit = { ...current };
+    } else {
+      // Sécurité au cas où l'utilisateur n'est pas chargé pour éviter le crash du template
+      this.user = { id: 0, prenom: 'Utilisateur', nom: '', email: '', role: "LECTEUR" };
+      this.userEdit = { ...this.user };
     }
-    // Charger les emprunts enrichis de l'utilisateur connecté
-    // @ts-ignore
-    this.loanService.getViewsByUserId(current.id).subscribe({
-      next: (loans) => {
-        this.loans = loans;
-        this.loansLoading = false;
-      },
-      error: (err) => {
-        console.error('Erreur chargement emprunts :', err);
-        this.loansLoading = false;
-      },
-    });
+
+    this.loansLoading = true;
+
+    this.loans$ = this.loanService.getViewsByUserId();
   }
 
   // ── Statut badge ────────────────────────────────────
@@ -68,29 +64,32 @@ export class MySpaceComponent {
 
   // ── Actions emprunts ────────────────────────────────
   onRenew(loan: LoanView): void {
-    this.loanService
-      .renew(loan.id)
-      .pipe(
-        // enrich() est async → on enchaîne avec switchMap
-        switchMap((updated) => this.loanService.enrich(updated)),
-      )
-      .subscribe({
-        next: (enriched) => {
-          this.loans = this.loans.map((l) => (l.id === loan.id ? enriched : l));
-          this.renewSuccess = loan.id;
-          setTimeout(() => (this.renewSuccess = null), 3000);
-        },
-        error: (err) => {
-          this.renewError = err.message ?? 'Erreur lors du renouvellement.';
-          setTimeout(() => (this.renewError = ''), 4000);
-        },
-      });
-  }
+      this.loanService
+        .renew(loan.id)
+        .pipe(
+          switchMap((updated) => this.loanService.enrich(updated))
+        )
+        .subscribe({
+          next: (enriched) => {
+            this.loans$ = this.loans$.pipe(
+              map(loansList => loansList.map(l => l.id === loan.id ? enriched : l))
+            );
+            this.renewSuccess = loan.id;
+            setTimeout(() => (this.renewSuccess = null), 3000);
+          },
+          error: (err) => {
+            this.renewError = err.message ?? 'Erreur lors du renouvellement.';
+            setTimeout(() => (this.renewError = ''), 4000);
+          },
+        });
+    }
 
   onReturn(loan: LoanView): void {
     this.loanService.return(loan.id).subscribe({
       next: () => {
-        this.loans = this.loans.filter((l) => l.id !== loan.id);
+        this.loans$ = this.loans$.pipe(
+          map(loansList => loansList.filter(l => l.id !== loan.id))
+        );
       },
       error: (err) => console.error('Erreur retour :', err),
     });

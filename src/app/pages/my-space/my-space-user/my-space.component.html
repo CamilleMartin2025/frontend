@@ -1,90 +1,96 @@
-<div class="container myspace-wrapper">
+<div class="container myspace-wrapper" *ngIf="user">
 
-  <!-- En-tête utilisateur -->
   <div class="user-header">
-    <div class="user-avatar">{{ user.prenom.charAt(0) }}{{ user.nom.charAt(0) }}</div>
+    <div class="user-avatar">
+      {{ user?.prenom?.charAt(0) || '' }}{{ user?.nom?.charAt(0) || '?' }}
+    </div>
     <div>
-      <h1 class="user-name">{{ user.prenom }} {{ user.nom }}</h1>
+      <h1 class="user-name">{{ user?.prenom }} {{ user?.nom }}</h1>
       <p class="user-section-label">MES EMPRUNTS</p>
     </div>
   </div>
 
-  <!-- Messages -->
   <div class="alert-success" *ngIf="renewSuccess !== null">
     Emprunt renouvelé avec succès !
   </div>
   <div class="alert-error" *ngIf="renewError">{{ renewError }}</div>
 
-  <!-- Chargement -->
-  <div class="loading-state" *ngIf="loansLoading">
-    <p>Chargement de vos emprunts...</p>
-  </div>
-
-  <!-- Liste des emprunts -->
-  <div class="loans-list">
-    <div
-      class="loan-item"
-      *ngFor="let loan of loans; let i = index"
-      [class.loan-late]="loan.isLate"
-    >
-      <!-- Miniature : couverture si dispo -->
-<!--      <div class="loan-thumb">-->
-<!--        <img-->
-<!--&lt;!&ndash;          *ngIf="loan.book.cover"&ndash;&gt;-->
-<!--&lt;!&ndash;          [src]="loan.book.cover"&ndash;&gt;-->
-<!--          [alt]="loan.book.title"-->
-<!--        />-->
-
-<!--        <div-->
-<!--&lt;!&ndash;          *ngIf="!loan.book.cover"&ndash;&gt;-->
-<!--          class="loan-thumb-placeholder"-->
-<!--          [style.background]="bookColor(i)"-->
-<!--        ></div>-->
-<!--      </div>-->
-
-      <!-- Titre / auteur -->
-      <div class="loan-info">
-<!--        <p class="loan-title">{{ loan.book.title }}</p>-->
-<!--        <p class="loan-author">{{ loan.book.author }}</p>-->
-      </div>
-
-      <!-- Date de retour -->
-      <div class="loan-date">
-        <span class="loan-date-label">Retour le</span>
-        <span class="loan-date-value" [class.date-late]="loan.isLate">
-          {{ loan.date_retour_prevu | date:'d MMMM yyyy' : '' : 'fr' }}
-        </span>
-      </div>
-
-      <!-- Badge statut -->
+  <ng-container *ngIf="loans$ | async as loansList; else loadingTpl">
+    
+    <div class="loans-list">
+      
       <div
-        class="loan-badge"
-        [class.badge-late]="getLoanStatus(loan) === 'late'"
-        [class.badge-urgent]="getLoanStatus(loan) === 'urgent'"
-        [class.badge-ok]="getLoanStatus(loan) === 'ok'"
+        class="loan-item"
+        *ngFor="let loan of loansList; let i = index"
+        [class.loan-late]="loan.isLate"
       >
-        {{ getLoanLabel(loan) }}
+        <div class="loan-thumb">
+          <!-- <img
+            *ngIf="loan.book?.cover"
+            [src]="loan.book?.cover"
+            [alt]="loan.book?.titre"
+          />
+          <div
+            *ngIf="!loan.book?.cover"
+            class="loan-thumb-placeholder"
+            [style.background]="bookColor(i)"
+          ></div> -->
+        </div>
+
+        <div class="loan-info">
+          <p class="loan-title">{{ loan.book?.titre || 'Livre inconnu' }}</p>
+          <p class="loan-author">par {{ loan.book?.auteur || 'Auteur inconnu' }}</p>
+        </div>
+
+        <div class="loan-date">
+          <span class="loan-date-label">Retour le</span>
+          <span class="loan-date-value" [class.date-late]="loan.isLate">
+            {{ loan.date_retour_prevu | date:'dd/MM/yyyy' }}
+          </span>
+        </div>
+
+        <div
+          class="loan-badge"
+          [class.badge-late]="getLoanStatus(loan) === 'late'"
+          [class.badge-urgent]="getLoanStatus(loan) === 'urgent'"
+          [class.badge-ok]="getLoanStatus(loan) === 'ok'"
+        >
+          {{ getLoanLabel(loan) }}
+        </div>
+
+        <div class="loan-actions">
+          <button 
+            class="btn-action btn-renew" 
+            [disabled]="loan.isLate"
+            (click)="onRenew(loan)"
+          >
+            Prolonger
+          </button>
+          <button 
+            class="btn-action btn-return" 
+            (click)="onReturn(loan)"
+          >
+            Retourner
+          </button>
+        </div>
       </div>
 
-      <!-- Action -->
-      <button *ngIf="loan.isLate" class="btn-action btn-renew" (click)="onRenew(loan)">
-        Renouveler
-      </button>
-      <button *ngIf="loan.isLate" class="btn-action btn-return" (click)="onReturn(loan)">
-        Retourner
-      </button>
-    </div>
+      <div class="empty-state" *ngIf="loansList.length === 0">
+        <p>Vous n'avez aucun emprunt en cours.</p>
+        <a routerLink="/catalogue" class="btn-primary" style="margin-top: 16px; display: inline-block;">
+          Parcourir le catalogue
+        </a>
+      </div>
 
-    <!-- État vide -->
-    <div class="empty-state" *ngIf="loans.length === 0">
-      <p>Vous n'avez aucun emprunt en cours.</p>
-      <a routerLink="/catalogue" class="btn-primary" style="margin-top: 16px; display: inline-block;">
-        Parcourir le catalogue
-      </a>
     </div>
-  </div>
+  </ng-container>
 
-  <!-- Bloc infos personnelles -->
+  <ng-template #loadingTpl>
+    <div class="loading-state">
+      <p>Chargement de vos emprunts...</p>
+    </div>
+  </ng-template>
+
   <div class="personal-section">
     <div class="personal-view" *ngIf="!editMode">
       <button class="btn-primary" (click)="onEditToggle()">
@@ -92,7 +98,7 @@
       </button>
     </div>
 
-    <div class="personal-edit" *ngIf="editMode">
+    <div class="personal-edit" *ngIf="editMode && userEdit">
       <h2 class="edit-title">Modifier mes informations</h2>
       <div class="edit-grid">
         <div class="form-group">

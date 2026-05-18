@@ -276,8 +276,6 @@ export class NavbarComponent {
 
   getRoleLabel(): string {
     const role = this.auth.currentUser()?.role;
-    if (role === 3) return 'Admin';
-    if (role === 2) return 'Libraire';
-    return 'Membre';
+    return role || "Membre";
   }
 }

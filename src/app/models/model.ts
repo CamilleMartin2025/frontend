@@ -14,11 +14,11 @@ export interface Book {
 // ── Interface brute renvoyée par l'API ──────────────
 export interface Loan {
   id: number;
-  id_livre: number;
-  id_utilisateur: number;
-  date_emprunt: string;        // ISO string ex: "2026-04-01T00:00:00"
-  date_retour_prevu: string;   // ISO string ex: "2026-05-15T00:00:00"
-  date_retour_effectif: string | null; // null si pas encore rendu
+  livreId: number;
+  utilisateurId: number;
+  dateEmprunt: string;        // ISO string ex: "2026-04-01T00:00:00"
+  dateRetourPrevu: string;   // ISO string ex: "2026-05-15T00:00:00"
+  dateRetourEffectif: string | null; // null si pas encore rendu
 }
 
 // ── Interface enrichie utilisée dans les templates ──
@@ -45,10 +45,11 @@ export interface Review {
   id: number;
   // title: string;
   commentaire: string;
-  id_utilisateur: number; //--> get name from getById
+  utilisateurId: number; //--> get name from getById
+  utilisateurNom: string;
   date_publication: Date;
   note: number;
-  id_livre: number;
+  livreId: number;
 }
 
 // ═══════════════════════════════════════════════════
@@ -74,7 +75,7 @@ export interface User {
   email: string;
   tel?: string;
   date_naissance?: string;  // ISO string "YYYY-MM-DD"
-  role: UserRole;           // ← champ rôle de l'API
+  role: string;           // ← champ rôle de l'API
 }
 
 // ── Payload décodé depuis le JWT ────────────────────
