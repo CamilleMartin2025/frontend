@@ -53,16 +53,16 @@ export class BookDetailComponent implements OnInit {
         this.similar = similar;
       });
 
-      this.bookService.getByAuthor(book.author, id).subscribe((sameAuthor) => {
+      this.bookService.getByAuthor(book.auteur, id).subscribe((sameAuthor) => {
         this.sameAuthor = sameAuthor;
       });
     });
   }
 
   onBorrow(): void {
-    if (this.book?.available) {
+    if (this.book?.quantite != 0) {
       this.borrowed = true;
-      this.book.available = false;
+      this.book.quantite - 1;
       // TODO: LoanService.borrow(this.book.id)
     }
   }

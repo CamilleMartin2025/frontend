@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Loan, User } from '../../../models/model';
 import { LoanService } from '../../../services/loan.service';
-import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-my-space',
@@ -102,4 +101,6 @@ export class MySpaceComponent {
   bookColor(i: number): string {
     return ['#4a90d9', '#5cb87a', '#e07b3a'][i % 3];
   }
+
+  protected readonly Date = Date;
 }

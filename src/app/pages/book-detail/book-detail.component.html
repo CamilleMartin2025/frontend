@@ -22,33 +22,33 @@
 
     <!-- Infos -->
     <div class="info-col">
-      <h1 class="book-title">{{ book.title }}</h1>
-      <p class="book-author">{{ book.author }}</p>
+      <h1 class="book-title">{{ book.titre }}</h1>
+      <p class="book-author">{{ book.auteur }}</p>
 
       <p class="availability"
-         [class.available]="book.available"
-         [class.unavailable]="!book.available">
-        {{ book.available ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
+         [class.available]="book.quantite > 0"
+         [class.unavailable]="book.quantite == 0">
+        {{ book.quantite == 0 ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
       </p>
 
       <div class="stars">
-        <span *ngFor="let filled of starsArray(book.rating)">{{ filled ? '★' : '☆' }}</span>
+        <span *ngFor="let filled of starsArray(book.note)">{{ filled ? '★' : '☆' }}</span>
       </div>
 
       <div class="book-description">
-        <p *ngFor="let para of book.description.split('\n\n')">{{ para }}</p>
+        <p *ngFor="let para of book.resume.split('\n\n')">{{ para }}</p>
       </div>
 
       <button
         class="btn-primary borrow-btn"
-        [disabled]="!book.available || borrowed"
+        [disabled]="book.quantite == 0 || borrowed"
         (click)="onBorrow()"
       >
         {{ borrowed ? 'Emprunté ✓' : 'Emprunter' }}
       </button>
 
       <div class="genres">
-        <span class="genre-tag" *ngFor="let g of book.genre">{{ g }}</span>
+        <span class="genre-tag" *ngFor="let g of book.categorie">{{ g }}</span>
       </div>
     </div>
   </div>
@@ -59,15 +59,13 @@
     <div class="reviews-grid">
       <div class="review-card" *ngFor="let review of reviews">
         <div class="review-stars">
-          <span *ngFor="let filled of starsArray(review.rating)">{{ filled ? '★' : '☆' }}</span>
+          <span *ngFor="let filled of starsArray(review.note)">{{ filled ? '★' : '☆' }}</span>
         </div>
-        <h3 class="review-title">{{ review.title }}</h3>
-        <p class="review-body">{{ review.body }}</p>
+        <p class="review-body">{{ review.commentaire }}</p>
         <div class="review-meta">
-          <div class="reviewer-avatar">{{ review.reviewerName.charAt(0) }}</div>
+          <div class="reviewer-avatar">{{ getUserById(review.id_utilisateur).getName().charAt(0) }}</div>
           <div>
-            <p class="reviewer-name">{{ review.reviewerName }}</p>
-            <p class="review-date">{{ review.date | date:'d MMMM yyyy' : '' : 'fr' }}</p>
+            <p class="reviewer-name">{{ getUserById(review.id_utilisateur).getName() }}</p>
           </div>
         </div>
       </div>
@@ -82,10 +80,10 @@
         <div class="related-cover">
 <!--          <img [src]="b.cover" [alt]="b.title" />-->
         </div>
-        <p class="related-title">{{ b.title }}</p>
-        <p class="related-author">{{ b.author }}</p>
-        <p [class.badge-available]="b.available" [class.badge-unavailable]="!b.available">
-          {{ b.available ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
+        <p class="related-title">{{ b.titre }}</p>
+        <p class="related-author">{{ b.auteur }}</p>
+        <p [class.badge-available]="b.quantite > 0" [class.badge-unavailable]="b.quantite == 0">
+          {{ b.quantite == 0 ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
         </p>
       </div>
     </div>
@@ -99,10 +97,10 @@
         <div class="related-cover">
 <!--          <img [src]="b.cover" [alt]="b.title" />-->
         </div>
-        <p class="related-title">{{ b.title }}</p>
-        <p class="related-author">{{ b.author }}</p>
-        <p [class.badge-available]="b.available" [class.badge-unavailable]="!b.available">
-          {{ b.available ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
+        <p class="related-title">{{ b.titre }}</p>
+        <p class="related-author">{{ b.auteur }}</p>
+        <p [class.badge-available]="b.quantite > 0" [class.badge-unavailable]="b.quantite == 0">
+          {{ b.quantite == 0 ? 'DISPONIBLE' : 'NON DISPONIBLE' }}
         </p>
       </div>
     </div>

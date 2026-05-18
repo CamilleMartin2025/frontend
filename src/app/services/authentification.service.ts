@@ -24,7 +24,7 @@ export class AuthService {
     return this.http.get<User[]>(this.apiLoanUser);
   }
 
-  getById(id: number): Observable<User> {
+  getUserById(id: number): Observable<User> {
     // @ts-ignore
     return this.getAll().pipe(map((users) => users.find((b) => b.id === id)));
   }

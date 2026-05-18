@@ -130,18 +130,18 @@
 
         <!-- Titre + auteur -->
         <div class="book-meta">
-          <p class="book-title">{{ book.title }}</p>
-          <p class="book-author">{{ book.author }}</p>
+          <p class="book-title">{{ book.titre }}</p>
+          <p class="book-author">{{ book.auteur }}</p>
         </div>
 
         <!-- Catégories -->
         <div class="book-genres">
-          <span class="genre-tag" *ngFor="let g of book.genre">{{ g }}</span>
+          <span class="genre-tag" *ngFor="let g of book.categorie">{{ g }}</span>
         </div>
 
         <!-- Note -->
         <div class="book-rating">
-          <span class="star filled" *ngFor="let filled of starsArray(book.rating); let i = index"
+          <span class="star filled" *ngFor="let filled of starsArray(book.note); let i = index"
                 [class.filled]="filled" [class.empty]="!filled">
             {{ filled ? '★' : '☆' }}
           </span>
@@ -149,9 +149,9 @@
 
         <!-- Disponibilité -->
         <div class="book-availability">
-          <span class="avail-badge" [class.avail-yes]="book.available" [class.avail-no]="!book.available">
+          <span class="avail-badge" [class.avail-yes]="book.quantite > 0" [class.avail-no]=" book.quantite == 0">
             <span class="avail-dot"></span>
-            {{ book.available ? 'Disponible' : 'Emprunté' }}
+            {{ book.quantite == 0 ? 'Disponible' : 'Emprunté' }}
           </span>
         </div>
 

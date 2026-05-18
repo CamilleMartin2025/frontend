@@ -18,9 +18,9 @@ import { Book } from '../models/model';
         </div>
       </a>
       <div class="book-info">
-        <h3 class="book-title">{{ book.title }}</h3>
-        <p class="book-author">{{ book.author }}</p>
-        <p class="book-desc">{{ book.description }}</p>
+        <h3 class="book-title">{{ book.titre }}</h3>
+        <p class="book-author">{{ book.auteur }}</p>
+        <p class="book-desc">{{ book.resume }}</p>
         <a [routerLink]="['/book', book.id]" class="btn-primary discover-btn">Découvrir</a>
       </div>
     </div>
