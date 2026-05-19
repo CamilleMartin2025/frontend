@@ -2,7 +2,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError } from 'rxjs';
-import { User, LoginForm, RegisterForm, UserRole } from '../models/model';
+import { User, LoginForm, RegisterForm, UserRole, Book } from '../models/model';
 
 const TOKEN_KEY = 'bookhub_token';
 const USER_KEY = 'bookhub_user';
@@ -18,14 +18,19 @@ const API = {
 export class AuthService {
   private loginUrl = 'http://localhost:8080/api/auth/login';
   private registerUrl = 'http://localhost:8080/api/auth/register';
+  private apiRoleUrl = 'http://localhost:8080/api/roles';
 
   private currentUserSignal = signal<User | null>(this.loadUserFromStorage());
   currentUser = this.currentUserSignal.asReadonly();
   isAuthenticated = computed(() => this.currentUser() !== null);
   isLoggedIn = computed(() => this.currentUserSignal() !== null);
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {}
 
+  // POST AUTHENTIFICATION
   login(credentials: LoginForm): Observable<any> {
     return this.http.post<any>(this.loginUrl, credentials).pipe(
       tap((response) => {
@@ -56,6 +61,7 @@ export class AuthService {
     );
   }
 
+  // POST REGISTER
   register(userForm: RegisterForm): Observable<User> {
     return this.http.post<User>(this.registerUrl, userForm);
   }
@@ -87,7 +93,7 @@ export class AuthService {
         atob(base64)
           .split('')
           .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
+          .join(''),
       );
       return JSON.parse(jsonPayload);
     } catch (e) {
@@ -107,7 +113,7 @@ export class AuthService {
 
   isLibraire(): boolean {
     const user = this.currentUser();
-    return user?.role === 'BIBLIOTHECAIRE' ;
+    return user?.role === 'BIBLIOTHECAIRE';
   }
 
   isUser(): boolean {
@@ -144,14 +150,16 @@ export class AuthService {
     }
   }
 
-
   // ═══════════════════════════════════════════════════
   //  GESTION UTILISATEURS (admin only)
   // ═══════════════════════════════════════════════════
+
+  // GET Récupération des utilisateurs
   getAllUsers(): Observable<User[]> {
     return this.http.get<User[]>(API.users, { headers: this.authHeaders() });
   }
 
+  // PATCH changer le rôle d'un utilisateur
   updateUserRole(userId: number, newRole: UserRole): Observable<User> {
     // ⚠️  Adapter l'endpoint et le corps selon ton API
     //     ex: PATCH /api/users/5/role  ou  PUT /api/users/5
@@ -169,8 +177,14 @@ export class AuthService {
       );
   }
 
+  // DELETE supprimer un utilisateur
   deleteUser(userId: number): Observable<void> {
     return this.http.delete<void>(`${API.users}/${userId}`, { headers: this.authHeaders() });
+  }
+
+  // GET consulter un profil
+  getUserById(userId: number): Observable<User> {
+    return this.http.get<User>(`${API.users}/${userId}`, { headers: this.authHeaders() });
   }
 
   // ═══════════════════════════════════════════════════
@@ -204,8 +218,6 @@ export class AuthService {
     return role !== undefined;
   }
 
-
-
   /** Headers HTTP avec le token Bearer */
   authHeaders(): HttpHeaders {
     const token = this.getToken();
@@ -215,10 +227,38 @@ export class AuthService {
     });
   }
 
+  // ═══════════════════════════════════════════════════
+  //  GESTION DES RÔLE
+  // ═══════════════════════════════════════════════════
 
+  // GET Lister tous les rôles
+  getRoles(): Observable<String[]> {
+    return this.http.get<String[]>(this.apiRoleUrl, { headers: this.authHeaders() });
+  }
+
+  // POST Créer un nouveau rôle
+  addRole(data: Omit<String, 'id'>): Observable<String> {
+    return this.http.post<String>(this.apiRoleUrl, data, { headers: this.authHeaders() });
+  }
+
+  // GET Chercher un rôle by id
+  getRoleById(id: number): Observable<String[]> {
+    return this.http.get<String[]>(this.apiRoleUrl + '/' + id, { headers: this.authHeaders() });
+  }
+
+  // DELETE Chercher un rôle by id
+  deleteRole(id: number): Observable<String[]> {
+    return this.http.delete<String[]>(this.apiRoleUrl + '/' + id, { headers: this.authHeaders() });
+  }
+
+  // GET Chercher un rôle by name
+  getRoleByName(name: string): Observable<String[]> {
+    return this.http.get<String[]>(this.apiRoleUrl + '/searchByName/' + name, {
+      headers: this.authHeaders(),
+    });
+  }
 
   // ═══════════════════════════════════════════════════
   //  HELPERS PRIVÉS
   // ═══════════════════════════════════════════════════
-
 }

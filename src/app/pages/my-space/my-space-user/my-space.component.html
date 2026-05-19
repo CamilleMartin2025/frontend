@@ -92,11 +92,10 @@
         class="loan-item"
         *ngFor="let review of reviewsList; let i = index"
       >
-<!--        TODO function getBookFromReview for here -->
-<!--        <div class="loan-info">-->
-<!--          <p class="loan-title">{{ review.book?.titre || 'Livre inconnu' }}</p>-->
-<!--          <p class="loan-author">par {{ review.book?.auteur || 'Auteur inconnu' }}</p>-->
-<!--        </div>-->
+        <div class="loan-info">
+          <p class="loan-title">{{ getBookByReviewId(review.livreId) || 'Livre inconnu' }}</p>
+          <p class="loan-author">par {{ review.commentaire || 'Pas de commentaire' }}</p>
+        </div>
 
       </div>
 

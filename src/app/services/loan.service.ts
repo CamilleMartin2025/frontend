@@ -16,12 +16,19 @@ export class LoanService {
 
   // ── Récupération brute ────────────────────────────
 
+  // GET Voir l'activité globale des emprunts
   getAll(): Observable<Loan[]> {
     return this.http.get<Loan[]>(this.apiLoanUrl);
   }
 
+  // GET Récupérer mon historique
   getByUserId(): Observable<Loan[]> {
     return this.http.get<Loan[]>(`${this.apiLoanUrl}/my`);
+  }
+
+  // GET Voir les emprunts en retard
+  getLate(): Observable<Loan[]> {
+    return this.http.get<Loan[]>(this.apiLoanUrl + '/late');
   }
 
   // ── Enrichissement ────────────────────────────────
@@ -47,9 +54,7 @@ export class LoanService {
         utilisateurId: loan.utilisateurId,
         date_emprunt: new Date(loan.dateEmprunt),
         date_retour_prevu: dueDate,
-        date_retour_effectif: loan.dateRetourEffectif
-          ? new Date(loan.dateRetourEffectif)
-          : null,
+        date_retour_effectif: loan.dateRetourEffectif ? new Date(loan.dateRetourEffectif) : null,
         daysLeft,
         isLate: daysLeft < 0 && !loan.dateRetourEffectif,
         book, // undefined si non trouvé → géré dans le template avec ?.
@@ -82,14 +87,16 @@ export class LoanService {
 
   // ── Actions ───────────────────────────────────────
 
-  create(id_livre: number, id_utilisateur: number): Observable<Loan> {
-    return this.http.post<Loan>(this.apiLoanUrl, { id_livre, id_utilisateur });
+  // POST Effectuer un nouvel emprunt
+  borrow(id_livre: number): Observable<Loan> {
+    return this.http.post<Loan>(this.apiLoanUrl +'/loan', id_livre);
   }
 
   // renew(loanId: number): Observable<Loan> {
   //   return this.http.patch<Loan>(`${this.apiLoanUrl}/${loanId}/renew`, {});
   // }
 
+  // PATCH Valider le retour d'un livre
   return(loanId: number): Observable<Loan> {
     return this.http.patch<Loan>(`${this.apiLoanUrl}/return/${loanId}`, {});
   }

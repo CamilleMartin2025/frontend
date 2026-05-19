@@ -19,7 +19,9 @@
       <button class="nav-item" [class.active]="activeTab === 'retards'" (click)="setTab('retards')">
         <span class="nav-icon">⏰</span>
         Retards
-        <span class="nav-badge nav-badge-red" *ngIf="lateCount > 0">{{ lateCount }}</span>
+        <ng-container *ngIf="lateCount | async as count">
+          <span class="nav-badge nav-badge-red" *ngIf="count > 0">{{count}}</span>
+        </ng-container>
       </button>
       <button class="nav-item" [class.active]="activeTab === 'avis'" (click)="setTab('avis')">
         <span class="nav-icon">💬</span>
@@ -106,39 +108,42 @@
     <section *ngIf="activeTab === 'retards'" class="tab-content fade-up">
       <div class="tab-header">
         <h1 class="tab-title">Retards de retour</h1>
-        <p class="tab-sub">{{ lateCount }} livre{{ lateCount > 1 ? 's' : '' }} non retourné{{ lateCount > 1 ? 's' : '' }}</p>
+        <ng-container *ngIf="lateCount | async as count">
+          <p class="tab-sub">{{ lateCount }} livre{{ count > 1 ? 's' : '' }} non retourné{{ count > 1 ? 's' : '' }}</p>
+        </ng-container>
+
       </div>
 
       <div class="late-list">
-        <div class="late-card" *ngFor="let late of lateReturns">
+        <div class="late-card" *ngFor="let late of (lateReturns$ | async)">
           <div class="late-thumb">
 <!--            <img [src]="late.book.cover" [alt]="late.book.title" />-->
           </div>
           <div class="late-info">
             <p class="late-book">{{ late.book.titre }}</p>
             <p class="late-author">{{ late.book.auteur }}</p>
-            <p class="late-user">{{ late.user }} — <a [href]="'mailto:' + late.userEmail" class="late-email">{{ late.userEmail }}</a></p>
+<!--            <p class="late-user">{{ late.user }} — <a [href]="'mailto:' + late.userEmail" class="late-email">{{ late.userEmail }}</a></p>-->
           </div>
           <div class="late-center">
-            <p class="late-due">Dû le {{ late.dueDate | date:'d MMM yyyy' : '' : 'fr' }}</p>
-            <span class="late-days-badge">{{ late.daysLate }} jour{{ late.daysLate > 1 ? 's' : '' }} de retard</span>
+            <p class="late-due">Dû le {{ late.date_retour_prevu | date:'d MMM yyyy' : '' : 'fr' }}</p>
+<!--            <span class="late-days-badge">{{ late.daysLate }} jour{{ late.daysLate > 1 ? 's' : '' }} de retard</span>-->
           </div>
           <div class="late-actions">
-            <button
-              class="btn-reminder"
-              [class.sent]="late.reminderSent"
-              [disabled]="late.reminderSent"
-              (click)="sendReminder(late)"
-            >
-              {{ late.reminderSent ? '✓ Rappel envoyé' : '✉ Envoyer rappel' }}
-            </button>
+<!--            <button-->
+<!--              class="btn-reminder"-->
+<!--              [class.sent]="late.reminderSent"-->
+<!--              [disabled]="late.reminderSent"-->
+<!--              (click)="sendReminder(late)"-->
+<!--            >-->
+<!--              {{ late.reminderSent ? '✓ Rappel envoyé' : '✉ Envoyer rappel' }}-->
+<!--            </button>-->
             <button class="btn-returned" (click)="markReturned(late)">
               Marquer retourné
             </button>
           </div>
         </div>
 
-        <div class="empty-state" *ngIf="lateReturns.length === 0">
+        <div class="empty-state" *ngIf="(lateCount | async) === 0">
           <p>🎉 Aucun retard en cours !</p>
         </div>
       </div>

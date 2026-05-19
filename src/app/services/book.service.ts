@@ -10,10 +10,12 @@ export class BookService {
 
   constructor(private http: HttpClient) {}
 
+  // GET Lister tous les livres
   getAll(): Observable<Book[]> {
     return this.http.get<Book[]>(this.apiBookUrl);
   }
 
+  // GET Détails d'un livre
   getById(id: number): Observable<Book | undefined> {
     return this.http.get<Book>(this.apiBookUrl + "/" + id)
   }
@@ -65,26 +67,24 @@ export class BookService {
   //  CRUD CATALOGUE (libraire & admin)
   // ─────────────────────────────────────────────────
 
-  /** Ajoute un livre et retourne le livre créé */
+  // POST Ajouter un nouveau livre
   addBook(data: Omit<Book, 'id'>): Observable<Book> {
     return this.http.post<Book>(this.apiBookUrl, data);
   }
 
-  /** Supprime un livre par id, retourne true si trouvé */
+  // DELETE Supprimer un livre
   deleteBook(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiBookUrl}/${id}`);
   }
 
-  /** Met à jour un livre existant */
+  // PUT Modifier un livre
   updateBook(id: number, changes: Partial<Omit<Book, 'id'>>): Observable<Book> {
-    return this.http.patch<Book>(`${this.apiBookUrl}/${id}`, changes);
+    return this.http.put<Book>(`${this.apiBookUrl}/${id}`, changes);
   }
 
-  /** Liste tous les genres distincts présents dans le catalogue */
-  getAllGenres(): Observable<string[]> {
-    return this.getAll().pipe(
-      map((books) => [...new Set(books.flatMap((b) => b.categorie))].sort()),
-    );
+  // GET Rechercher des livres
+  searchBooks() : Observable<Book[]>{
+    return this.http.get<Book[]>(this.apiBookUrl +'/search');
   }
 }
 

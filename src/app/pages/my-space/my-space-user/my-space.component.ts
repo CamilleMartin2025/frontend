@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Loan, LoanView, Review, User } from '../../../models/model';
+import { Book, Loan, LoanView, Review, User } from '../../../models/model';
 import { LoanService } from '../../../services/loan.service';
 import { AuthService } from '../../../services/authentification.service';
 import { switchMap, Observable, map } from 'rxjs';
@@ -40,10 +40,13 @@ export class MySpaceComponent {
 
   ngOnInit(): void {
     const current = this.authService.currentUser();
+    console.log('CURRENT USER =', current);
+
     if (current) {
       this.user = { ...current };
       this.userEdit = { ...current };
-    } else {
+    }
+    else {
       // Sécurité au cas où l'utilisateur n'est pas chargé pour éviter le crash du template
       this.user = { id: 0, prenom: 'Utilisateur', nom: '', email: '', role: 'LECTEUR' };
       this.userEdit = { ...this.user };
@@ -52,6 +55,7 @@ export class MySpaceComponent {
     this.loansLoading = true;
 
     this.loans$ = this.loanService.getViewsByUserId();
+    console.log(this.user.id, typeof this.user.id);
     this.reviews$ = this.reviewService.getReviewsByUser(this.user.id);
   }
 
@@ -125,4 +129,8 @@ export class MySpaceComponent {
   }
 
   protected readonly Date = Date;
+
+  getBookByReviewId(id: number) : Observable<Book> {
+    return this.reviewService.getBookByReviewId(id).pipe()
+  };
 }

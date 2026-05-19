@@ -1,11 +1,13 @@
 import { Component, OnInit,ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { Book, Review } from '../../models/model';
+import { Book, Review, User } from '../../models/model';
 import { ReviewService } from '../../services/review.service';
 import { BookService } from '../../services/book.service';
 import { Observable, of } from 'rxjs';
 import { switchMap, tap, catchError, shareReplay} from 'rxjs/operators';
+import { LoanService } from '../../services/loan.service';
+import { AuthService } from '../../services/authentification.service';
 
 @Component({
   selector: 'app-book-detail',
@@ -13,7 +15,7 @@ import { switchMap, tap, catchError, shareReplay} from 'rxjs/operators';
   imports: [CommonModule, RouterLink],
   templateUrl: './book-detail.component.html',
   styleUrl: './book-detail.component.css',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BookDetailComponent implements OnInit {
   // On transforme l'objet en Observable
@@ -31,11 +33,13 @@ export class BookDetailComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private reviewService: ReviewService,
-    private bookService: BookService
+    private bookService: BookService,
+    private loanService: LoanService,
+    private authService: AuthService,
   ) {}
 
-ngOnInit(): void {
-    //  on récupère le livre
+  ngOnInit(): void {
+    // on récupère le livre
     this.book$ = this.route.paramMap.pipe(
       switchMap((params) => {
         const idParam = params.get('id');
@@ -55,10 +59,10 @@ ngOnInit(): void {
             console.error('book error', err);
             this.notFound = true;
             return of(undefined);
-          })
+          }),
         );
       }),
-      shareReplay(1) // Évite de re-déclencher la requête HTTP du livre pour chaque composant secondaire
+      shareReplay(1), // Évite de re-déclencher la requête HTTP du livre pour chaque composant secondaire
     );
 
     // On lie dynamiquement les avis
@@ -70,7 +74,7 @@ ngOnInit(): void {
       catchError((err) => {
         console.error('reviews error', err);
         return of([]);
-      })
+      }),
     );
 
     // On lie les livres similaires
@@ -82,7 +86,7 @@ ngOnInit(): void {
       catchError((err) => {
         console.error('similar error', err);
         return of([]);
-      })
+      }),
     );
 
     // On lie les livres du même auteur
@@ -94,7 +98,7 @@ ngOnInit(): void {
       catchError((err) => {
         console.error('author error', err);
         return of([]);
-      })
+      }),
     );
   }
 
@@ -109,5 +113,16 @@ ngOnInit(): void {
 
   onBorrow(): void {
     this.borrowed = true;
+
+    this.book$.pipe(
+      switchMap((book) => {
+        if (!book || !book.id) return of([]);
+        return this.loanService.borrow(book.id);
+      }),
+      catchError((err) => {
+        console.error('borrow error', err);
+        return of([]);
+      }),
+    );
   }
 }

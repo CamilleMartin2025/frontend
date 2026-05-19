@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { BookService } from '../../../services/book.service';
 import { AuthService } from '../../../services/authentification.service';
 import { Book, Loan, Review, User, UserRole, ROLE_LABELS, LoanView } from '../../../models/model';
-import { Observable, switchMap } from 'rxjs';
+import { map, Observable, switchMap, take } from 'rxjs';
 import { LoanService } from '../../../services/loan.service';
 
 type AdminTab = 'emprunts' | 'retards' | 'avis' | 'stats' | 'catalogue' | 'utilisateurs' | 'mon-espace';
@@ -18,16 +18,6 @@ interface BorrowRequest {
   requestDate: Date;
   currentDueDate?: Date;
   status: 'pending' | 'approved' | 'rejected';
-}
-
-interface LateReturn {
-  id: number;
-  user: string;
-  userEmail: string;
-  book: Book;
-  dueDate: Date;
-  daysLate: number;
-  reminderSent: boolean;
 }
 
 interface AdminReview {
@@ -80,7 +70,8 @@ export class MySpaceAdminComponent implements OnInit {
   requestFilter: 'all' | 'emprunt' | 'prolongement' = 'all';
 
   // ── Retards ──
-  lateReturns: LateReturn[] = [];
+  lateReturns$!: Observable<LoanView[]>;
+  lateCount$!: Observable<number>;
 
   // ── Avis à modérer ──
   reviews: AdminReview[] = [];
@@ -101,9 +92,15 @@ export class MySpaceAdminComponent implements OnInit {
 
   ngOnInit(): void {
     const current = this.authService.currentUser();
+    console.log('CURRENT USER =', current);
+
     if (current) {
       this.user = { ...current };
       this.userEdit = { ...current };
+    } else {
+      // Sécurité au cas où l'utilisateur n'est pas chargé pour éviter le crash du template
+      this.user = { id: 0, prenom: 'Admin', nom: '', email: '', role: 'ADMIN' };
+      this.userEdit = { ...this.user };
     }
     // Charger les emprunts enrichis de l'utilisateur connecté
     // @ts-ignore
@@ -197,7 +194,7 @@ export class MySpaceAdminComponent implements OnInit {
   }
 
   // ─────────────────────────────────────────
-  //  DEMANDES
+  //  DEMANDES -> for renew which we dicarded / left one for example
   // ─────────────────────────────────────────
   private loadRequests(): void {
     this.bookService.getAll().subscribe((books) => {
@@ -210,69 +207,9 @@ export class MySpaceAdminComponent implements OnInit {
           requestDate: new Date('2026-05-10'),
           status: 'pending',
         },
-        {
-          id: 2,
-          user: 'Thomas Renard',
-          book: books[13],
-          type: 'emprunt',
-          requestDate: new Date('2026-05-10'),
-          status: 'pending',
-        },
-        {
-          id: 3,
-          user: 'Camille Leroy',
-          book: books[4],
-          type: 'prolongement',
-          requestDate: new Date('2026-05-09'),
-          currentDueDate: new Date('2026-05-12'),
-          status: 'pending',
-        },
-        {
-          id: 4,
-          user: 'Marc Durand',
-          book: books[6],
-          type: 'emprunt',
-          requestDate: new Date('2026-05-08'),
-          status: 'approved',
-        },
-        {
-          id: 5,
-          user: 'Inès Kader',
-          book: books[14],
-          type: 'prolongement',
-          requestDate: new Date('2026-05-07'),
-          currentDueDate: new Date('2026-05-15'),
-          status: 'approved',
-        },
-        {
-          id: 6,
-          user: 'Lucie Petit',
-          book: books[2],
-          type: 'emprunt',
-          requestDate: new Date('2026-05-06'),
-          status: 'rejected',
-        },
-        {
-          id: 7,
-          user: 'Antoine Vidal',
-          book: books[16],
-          type: 'emprunt',
-          requestDate: new Date('2026-05-11'),
-          status: 'pending',
-        },
-        {
-          id: 8,
-          user: 'Emma Bernard',
-          book: books[3],
-          type: 'prolongement',
-          requestDate: new Date('2026-05-11'),
-          currentDueDate: new Date('2026-05-20'),
-          status: 'pending',
-        },
       ];
     });
   }
-
   get filteredRequests(): BorrowRequest[] {
     return this.requestFilter === 'all'
       ? this.requests
@@ -297,60 +234,42 @@ export class MySpaceAdminComponent implements OnInit {
   //  RETARDS
   // ─────────────────────────────────────────
   private loadLateReturns(): void {
-    this.bookService.getAll().subscribe((books) => {
-      this.lateReturns = [
-        {
-          id: 1,
-          user: 'Thomas Renard',
-          userEmail: 'thomas.r@mail.fr',
-          book: books[13],
-          dueDate: new Date('2026-05-01'),
-          daysLate: 11,
-          reminderSent: true,
-        },
-        {
-          id: 2,
-          user: 'Lucie Petit',
-          userEmail: 'lucie.p@mail.fr',
-          book: books[5],
-          dueDate: new Date('2026-04-28'),
-          daysLate: 14,
-          reminderSent: true,
-        },
-        {
-          id: 3,
-          user: 'Paul Morel',
-          userEmail: 'paul.m@mail.fr',
-          book: books[2],
-          dueDate: new Date('2026-05-05'),
-          daysLate: 7,
-          reminderSent: false,
-        },
-        {
-          id: 4,
-          user: 'Élodie Faure',
-          userEmail: 'elodie.f@mail.fr',
-          book: books[10],
-          dueDate: new Date('2026-05-08'),
-          daysLate: 4,
-          reminderSent: false,
-        },
-      ];
+    this.lateReturns$ = this.loanService.getLate().pipe(
+      map((loans) =>
+        loans.map((loan) => ({
+          id: loan.id,
+          id_livre: loan.livreId,
+          id_utilisateur: loan.utilisateurId,
+
+          date_emprunt: new Date(loan.dateEmprunt),
+          date_retour_prevu: new Date(loan.dateRetourPrevu),
+          date_retour_effectif: loan.dateRetourEffectif ? new Date(loan.dateRetourEffectif) : null,
+
+          daysLeft: this.calculateDaysLeft(loan.dateRetourPrevu),
+          isLate: this.calculateDaysLeft(loan.dateRetourPrevu) < 0,
+
+          // données enrichies
+          book: this.books.find((b) => b.id === loan.livreId)!,
+        })),
+      ),
+    );
+  }
+
+  get lateCount(): Observable<number> {
+    this.lateCount$ = this.lateReturns$.pipe(map((loans) => loans.length));
+    return this.lateCount$;
+  }
+
+  // sendReminder(late: Observable<Loan>): void {
+  //   late.reminderSent = true;
+  //   this.lateReturns = [...this.lateReturns];
+  //   // appel API email
+  // }
+
+  markReturned(late$: Observable<Loan>): void {
+    late$.pipe(take(1)).subscribe((late) => {
+      this.loanService.return(late.id);
     });
-  }
-
-  get lateCount(): number {
-    return this.lateReturns.length;
-  }
-
-  sendReminder(late: LateReturn): void {
-    late.reminderSent = true;
-    this.lateReturns = [...this.lateReturns];
-    // TODO: appel API email
-  }
-
-  markReturned(late: LateReturn): void {
-    this.lateReturns = this.lateReturns.filter((l) => l.id !== late.id);
   }
 
   // ─────────────────────────────────────────
@@ -474,23 +393,23 @@ export class MySpaceAdminComponent implements OnInit {
 
         {
           label: 'Retards en cours',
-          value: 4,
+          value: Number(this.lateCount$),
           icon: '⏰',
           sub: 'livres non retournés',
         },
 
         {
           label: 'Emprunts ce mois',
-          value: 27,
+          value: 0,
           icon: '📅',
           sub: '+12% vs mois dernier',
         },
 
         {
           label: 'Membres actifs',
-          value: 43,
+          value: 'user active count',
           icon: '👥',
-          sub: 'sur 67 inscrits',
+          sub: 'get all users length',
         },
 
         {
@@ -680,6 +599,15 @@ export class MySpaceAdminComponent implements OnInit {
 
   getRoleBadgeClass(role: UserRole): string {
     return `role-badge role-${role}`;
+  }
+
+  private calculateDaysLeft(dateRetourPrevu: string): number {
+    const today = new Date().getTime();
+    const returnDate = new Date(dateRetourPrevu).getTime();
+
+    const diffMs = returnDate - today;
+
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   }
 }
 
