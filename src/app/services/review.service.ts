@@ -18,17 +18,26 @@ export class ReviewService {
   }
 
   getReviews(bookId: number): Observable<Review[]> {
-    return this.getAll().pipe(map((reviews) => {
-      console.log(reviews)
-      return reviews.filter((r) => r.livreId === bookId)}));
+    return this.http.get<Review[]>(this.apiReviewUrl + '/book/' + bookId);
+  }
+
+  getReviewsByUser(userId : number) : Observable<Review[]>{
+    return this.getAll().pipe(
+      map((reviews) => {
+        return reviews.filter((review) => review.utilisateurId === userId);
+      }),
+    );
+  }
+
+  createReview(data: Omit<Review, 'id'>): void {
+    this.http.post<Review[]>(this.apiReviewUrl, data);
   }
 
   setBookNote(bookId: number): void {
-    this.getAll()
+    this.getReviews(bookId)
       .pipe(
         map((reviews) => {
           const notes = reviews
-            .filter((r) => r.livreId === bookId)
             .map((r) => r.note)
             .filter((n) => n != null);
 

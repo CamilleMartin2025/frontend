@@ -94,8 +94,9 @@ export class CatalogueComponent implements OnInit {
   }
 
   toggleGenre(genre: string) {
-    const current = this.selectedGenre();
-    this.selectedGenre.set(genre);
+    if (this.selectedGenre() !== genre) {
+      this.selectedGenre.set(genre);
+    }
   }
 
   isGenreSelected(genre: string): boolean {

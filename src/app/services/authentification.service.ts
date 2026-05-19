@@ -45,14 +45,14 @@ export class AuthService {
             prenom: payload?.prenom || '',
             nom: payload?.nom || '',
             // S'adapte si Spring envoie un tableau ou une string (ex: 'ROLE_ADMIN' ou 'ADMIN')
-            role: this.extractRole(payload)
+            role: this.extractRole(payload),
           };
 
           localStorage.setItem(USER_KEY, JSON.stringify(user));
           this.currentUserSignal.set(user); // On met à jour le Signal Angular
         }
       }),
-      catchError((err) => throwError(() => err))
+      catchError((err) => throwError(() => err)),
     );
   }
 

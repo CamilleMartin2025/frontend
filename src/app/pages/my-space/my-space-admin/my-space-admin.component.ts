@@ -143,25 +143,25 @@ export class MySpaceAdminComponent implements OnInit {
   }
 
   // ── Actions emprunts ────────────────────────────────
-  onRenew(loan: LoanView): void {
-    this.loanService
-      .renew(loan.id)
-      .pipe(
-        // enrich() est async → on enchaîne avec switchMap
-        switchMap((updated) => this.loanService.enrich(updated)),
-      )
-      .subscribe({
-        next: (enriched) => {
-          this.loans = this.loans.map((l) => (l.id === loan.id ? enriched : l));
-          this.renewSuccess = loan.id;
-          setTimeout(() => (this.renewSuccess = null), 3000);
-        },
-        error: (err) => {
-          this.renewError = err.message ?? 'Erreur lors du renouvellement.';
-          setTimeout(() => (this.renewError = ''), 4000);
-        },
-      });
-  }
+  // onRenew(loan: LoanView): void {
+  //   this.loanService
+  //     .renew(loan.id)
+  //     .pipe(
+  //       // enrich() est async → on enchaîne avec switchMap
+  //       switchMap((updated) => this.loanService.enrich(updated)),
+  //     )
+  //     .subscribe({
+  //       next: (enriched) => {
+  //         this.loans = this.loans.map((l) => (l.id === loan.id ? enriched : l));
+  //         this.renewSuccess = loan.id;
+  //         setTimeout(() => (this.renewSuccess = null), 3000);
+  //       },
+  //       error: (err) => {
+  //         this.renewError = err.message ?? 'Erreur lors du renouvellement.';
+  //         setTimeout(() => (this.renewError = ''), 4000);
+  //       },
+  //     });
+  // }
 
   onReturn(loan: LoanView): void {
     this.loanService.return(loan.id).subscribe({

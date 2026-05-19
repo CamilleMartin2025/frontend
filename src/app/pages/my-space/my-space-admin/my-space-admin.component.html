@@ -305,7 +305,7 @@
           <div class="loan-badge" [class.badge-late]="getLoanStatus(loan) === 'late'" [class.badge-urgent]="getLoanStatus(loan) === 'urgent'" [class.badge-ok]="getLoanStatus(loan) === 'ok'">
             {{ getLoanLabel(loan) }}
           </div>
-          <button *ngIf="!loan.isLate" class="btn-action btn-renew" (click)="onRenew(loan)">Renouveler</button>
+<!--          <button *ngIf="!loan.isLate" class="btn-action btn-renew" (click)="onRenew(loan)">Renouveler</button>-->
           <button *ngIf="loan.isLate"  class="btn-action btn-return" (click)="onReturn(loan)">Retourner</button>
         </div>
 

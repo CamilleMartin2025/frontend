@@ -15,9 +15,6 @@ import { Observable } from 'rxjs';
   styleUrl: './home.component.css',
 })
 export class HomeComponent {
-  // Livres les plus empruntés (??)
-  mostBorrowed!: Observable<Book[]>;
-
   // Livres les mieux notés
   topRated!: Observable<Book[]>;
 
@@ -27,7 +24,6 @@ export class HomeComponent {
   constructor(private bookService: BookService) {}
 
   ngOnInit(): void {
-    // this.mostBorrowed = this.bookService.getSimilar();
     this.topRated = this.bookService.getBestRating();
     this.newBooks = this.bookService.getNew();
   }

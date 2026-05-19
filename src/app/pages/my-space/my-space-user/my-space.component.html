@@ -16,9 +16,9 @@
   <div class="alert-error" *ngIf="renewError">{{ renewError }}</div>
 
   <ng-container *ngIf="loans$ | async as loansList; else loadingTpl">
-    
+
     <div class="loans-list">
-      
+
       <div
         class="loan-item"
         *ngFor="let loan of loansList; let i = index"
@@ -59,15 +59,15 @@
         </div>
 
         <div class="loan-actions">
-          <button 
-            class="btn-action btn-renew" 
-            [disabled]="loan.isLate"
-            (click)="onRenew(loan)"
-          >
-            Prolonger
-          </button>
-          <button 
-            class="btn-action btn-return" 
+<!--          <button-->
+<!--            class="btn-action btn-renew"-->
+<!--            [disabled]="loan.isLate"-->
+<!--            (click)="onRenew(loan)"-->
+<!--          >-->
+<!--            Prolonger-->
+<!--          </button>-->
+          <button
+            class="btn-action btn-return"
             (click)="onReturn(loan)"
           >
             Retourner
@@ -84,6 +84,30 @@
 
     </div>
   </ng-container>
+
+  <ng-container *ngIf="reviews$ | async as reviewsList; else loadingTpl">
+    <div class="loans-list">
+
+      <div
+        class="loan-item"
+        *ngFor="let review of reviewsList; let i = index"
+      >
+<!--        TODO function getBookFromReview for here -->
+<!--        <div class="loan-info">-->
+<!--          <p class="loan-title">{{ review.book?.titre || 'Livre inconnu' }}</p>-->
+<!--          <p class="loan-author">par {{ review.book?.auteur || 'Auteur inconnu' }}</p>-->
+<!--        </div>-->
+
+      </div>
+
+      <div class="empty-state" *ngIf="reviewsList.length === 0">
+        <p>Laisser votre premier avis.</p>
+      </div>
+
+    </div>
+  </ng-container>
+
+
 
   <ng-template #loadingTpl>
     <div class="loading-state">

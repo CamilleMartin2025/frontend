@@ -85,7 +85,7 @@
           </svg>
           Filtres
           <span class="filter-count" *ngIf="hasActiveFilters()">
-            {{ selectedGenre().length + (availabilityFilter() !== 'all' ? 1 : 0) }}
+            {{ selectedGenre() + (availabilityFilter() !== 'all' ? 1 : 0) }}
           </span>
         </button>
 
@@ -111,7 +111,7 @@
         {{ availabilityFilter() === 'available' ? 'Disponible' : 'Non disponible' }} ✕
       </button>
       <button class="active-tag"
-              (click)="toggleGenre(selectedGenre())">
+              (click)="toggleGenre('')">
         {{ selectedGenre() }} ✕
       </button>
     </div>

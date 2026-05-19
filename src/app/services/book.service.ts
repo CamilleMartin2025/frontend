@@ -27,11 +27,7 @@ export class BookService {
 
   // Livres du même genre (hors livre courant)
   getSimilar(book: Book): Observable<Book[]> {
-    if (!book) {
-      return of([]);
-    }
-
-    return this.getAll().pipe(
+        return this.getAll().pipe(
       map((books) =>
         {
           console.log(books)

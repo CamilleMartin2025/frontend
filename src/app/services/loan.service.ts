@@ -22,10 +22,6 @@ export class LoanService {
 
   getByUserId(): Observable<Loan[]> {
     return this.http.get<Loan[]>(`${this.apiLoanUrl}/my`);
-    // Alternative si pas de filtre API :
-    // return this.getAll().pipe(
-    //   map(loans => loans.filter(l => l.id_utilisateur === userId))
-    // );
   }
 
   // ── Enrichissement ────────────────────────────────
@@ -43,7 +39,7 @@ export class LoanService {
     const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
     // getById renvoie Observable<Book | undefined> → on l'attend avant de construire LoanView
     // @ts-ignore
-   
+
     return this.bookService.getById(loan.livreId).pipe(
       map((book: Book | undefined) => ({
         id: loan.id,
@@ -90,11 +86,11 @@ export class LoanService {
     return this.http.post<Loan>(this.apiLoanUrl, { id_livre, id_utilisateur });
   }
 
-  renew(loanId: number): Observable<Loan> {
-    return this.http.patch<Loan>(`${this.apiLoanUrl}/${loanId}/renew`, {});
-  }
+  // renew(loanId: number): Observable<Loan> {
+  //   return this.http.patch<Loan>(`${this.apiLoanUrl}/${loanId}/renew`, {});
+  // }
 
   return(loanId: number): Observable<Loan> {
-    return this.http.patch<Loan>(`${this.apiLoanUrl}/${loanId}/return`, {});
+    return this.http.patch<Loan>(`${this.apiLoanUrl}/return/${loanId}`, {});
   }
 }

@@ -11,17 +11,6 @@
   </div>
 </section>
 
-<!-- Livres les plus empruntés -->
-<section class="books-section container">
-  <h2 class="section-title">Livres les plus souvent empruntés</h2>
-  <div class="books-grid">
-    <app-book-card
-      *ngFor="let book of mostBorrowed | async"
-      [book]="book">
-    </app-book-card>
-  </div>
-</section>
-
 <!-- Livres les mieux notés -->
 <section class="books-section container">
   <h2 class="section-title">Livres les mieux notés</h2>
