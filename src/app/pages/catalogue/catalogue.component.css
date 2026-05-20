@@ -472,6 +472,43 @@
   color: var(--color-text-muted);
 }
 
+/* Styles de la pagination discrète */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: 25px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.btn-page {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.btn-page:hover:not(:disabled) {
+  background-color: #f0f0f0;
+  border-color: #999;
+}
+
+.btn-page:disabled {
+  color: #ccc;
+  border-color: #eee;
+  cursor: not-allowed;
+}
+
+.info-page strong {
+  color: #000;
+}
+
 /* ══════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════ */

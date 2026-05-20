@@ -18,7 +18,7 @@ type SortOption = 'title-asc' | 'title-desc' | 'author-asc' | 'rating-desc';
 export class CatalogueComponent implements OnInit {
   // Tous les filtres en signals
   searchQuery = signal('');
-  selectedGenre = signal<string>('');
+  selectedCategories = signal<string[]>([]);
   availabilityFilter = signal<'all' | 'available' | 'unavailable'>('all');
   sortBy = signal<SortOption>('title-asc');
   filtersOpen = signal(false);
@@ -26,6 +26,24 @@ export class CatalogueComponent implements OnInit {
   // Source de données en signal pour que computed() réagisse correctement
   private allBooksSignal = signal<Book[]>([]);
   allGenres: string[] = [];
+
+  // Pagination
+  pageActuelle = signal<number>(1);
+  livresParPage = 20;
+  // Calcul du nombre total de pages
+  totalPages = computed(() => Math.ceil(this.allBooksSignal().length / this.livresParPage));
+  // Les livres à afficher pour la page active (Découpage de l'index)
+  livresAffiches = computed(() => {
+    const indexDebut = (this.pageActuelle() - 1) * this.livresParPage;
+    const indexFin = indexDebut + this.livresParPage;
+    return this.allBooksSignal().slice(indexDebut, indexFin);
+  });
+  // Méthode pour changer de page
+  changerPage(nouvellePage: number): void {
+    if (nouvellePage >= 1 && nouvellePage <= this.totalPages()) {
+      this.pageActuelle.set(nouvellePage);
+    }
+  }
 
   constructor(
     private bookService: BookService,
@@ -44,9 +62,9 @@ export class CatalogueComponent implements OnInit {
 
   // computed() dépend uniquement de signals → recalcul garanti et synchrone
   filteredBooks = computed(() => {
-    const books = this.allBooksSignal(); // ← signal, réactif
+    const books = this.livresAffiches(); // ← signal, réactif
     const q = this.searchQuery().toLowerCase().trim();
-    const genre = this.selectedGenre();
+    const categories = this.selectedCategories();
     const avail = this.availabilityFilter();
     const sort = this.sortBy();
 
@@ -57,7 +75,7 @@ export class CatalogueComponent implements OnInit {
         book.auteur.toLowerCase().includes(q) ||
         book.categorie.toLowerCase().includes(q);
 
-      const matchGenre = book.categorie == genre || book.categorie != genre;
+      const matchGenre = categories.length === 0 || categories.includes(book.categorie);
 
       const matchAvail =
         avail === 'all' ||
@@ -66,7 +84,6 @@ export class CatalogueComponent implements OnInit {
 
       return matchSearch && matchGenre && matchAvail;
     });
-
 
     return [...result].sort((a, b) => {
       switch (sort) {
@@ -86,21 +103,22 @@ export class CatalogueComponent implements OnInit {
 
   resultCount = computed(() => this.filteredBooks().length);
   hasActiveFilters = computed(
-    () => this.selectedGenre() !== '' || this.availabilityFilter() !== 'all',
+    () => this.selectedCategories().length > 0 || this.availabilityFilter() !== 'all',
   );
 
   onSearch(value: string) {
     this.searchQuery.set(value);
   }
 
-  toggleGenre(genre: string) {
-    if (this.selectedGenre() !== genre) {
-      this.selectedGenre.set(genre);
-    }
+  toggleCategory(cat: string): void {
+    const current = this.selectedCategories();
+    this.selectedCategories.set(
+      current.includes(cat) ? current.filter((c) => c !== cat) : [...current, cat],
+    );
   }
 
-  isGenreSelected(genre: string): boolean {
-    return this.selectedGenre().includes(genre);
+  isCategorySelected(cat: string): boolean {
+    return this.selectedCategories().includes(cat);
   }
 
   setAvailability(v: 'all' | 'available' | 'unavailable') {
@@ -114,7 +132,7 @@ export class CatalogueComponent implements OnInit {
   }
 
   clearFilters() {
-    this.selectedGenre.set('');
+    this.selectedCategories.set([]);
     this.availabilityFilter.set('all');
   }
 

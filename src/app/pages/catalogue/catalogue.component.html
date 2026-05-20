@@ -42,8 +42,8 @@
         <button
           class="genre-chip"
           *ngFor="let genre of allGenres"
-          [class.selected]="isGenreSelected(genre)"
-          (click)="toggleGenre(genre)"
+          [class.selected]="isCategorySelected(genre)"
+          (click)="toggleCategory(genre)"
         >
           {{ genre }}
         </button>
@@ -85,7 +85,7 @@
           </svg>
           Filtres
           <span class="filter-count" *ngIf="hasActiveFilters()">
-            {{ selectedGenre() + (availabilityFilter() !== 'all' ? 1 : 0) }}
+            {{ selectedCategories().length + (availabilityFilter() !== 'all' ? 1 : 0) }}
           </span>
         </button>
 
@@ -111,8 +111,8 @@
         {{ availabilityFilter() === 'available' ? 'Disponible' : 'Non disponible' }} ✕
       </button>
       <button class="active-tag"
-              (click)="toggleGenre('')">
-        {{ selectedGenre() }} ✕
+              (click)="toggleCategory('')">
+        {{ selectedCategories() }} ✕
       </button>
     </div>
 
@@ -159,6 +159,25 @@
           </svg>
         </div>
       </a>
+    </div>
+    <div class="pagination">
+      <button
+        (click)="changerPage(pageActuelle() - 1)"
+        [disabled]="pageActuelle() === 1"
+        class="btn-page">
+        ‹
+      </button>
+
+      <span class="info-page">
+      Page <strong>{{ pageActuelle() }}</strong> sur {{ totalPages() }}
+    </span>
+
+      <button
+        (click)="changerPage(pageActuelle() + 1)"
+        [disabled]="pageActuelle() === totalPages()"
+        class="btn-page">
+        ›
+      </button>
     </div>
 
     <!-- État vide -->

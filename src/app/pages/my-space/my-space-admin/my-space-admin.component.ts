@@ -7,6 +7,7 @@ import { AuthService } from '../../../services/authentification.service';
 import { Book, Loan, Review, User, UserRole, ROLE_LABELS, LoanView } from '../../../models/model';
 import { map, Observable, switchMap, take } from 'rxjs';
 import { LoanService } from '../../../services/loan.service';
+import { ReviewService } from '../../../services/review.service';
 
 type AdminTab = 'emprunts' | 'retards' | 'avis' | 'stats' | 'catalogue' | 'utilisateurs' | 'mon-espace';
 
@@ -77,6 +78,8 @@ export class MySpaceAdminComponent implements OnInit {
   reviews: AdminReview[] = [];
   reviewFilter: 'all' | 'pending' | 'approved' | 'rejected' = 'pending';
 
+  myReviews: Review[] = [];
+
   // ── Stats ──
   stats: Stat[] = [];
   topRated!: Book[];
@@ -88,6 +91,7 @@ export class MySpaceAdminComponent implements OnInit {
     private authService: AuthService,
     private loanService: LoanService,
     private cdr: ChangeDetectorRef,
+    private reviewService: ReviewService,
   ) {}
 
   ngOnInit(): void {
@@ -193,8 +197,14 @@ export class MySpaceAdminComponent implements OnInit {
     return ['#4a90d9', '#5cb87a', '#e07b3a'][i % 3];
   }
 
+  protected readonly Date = Date;
+
+  getBookByReviewId(id: number) : Observable<Book> {
+    return this.reviewService.getBookByReviewId(id).pipe()
+  };
+
   // ─────────────────────────────────────────
-  //  DEMANDES -> for renew which we dicarded / left one for example
+  //  DEMANDES -> for renew which we discarded / left one for example
   // ─────────────────────────────────────────
   private loadRequests(): void {
     this.bookService.getAll().subscribe((books) => {
@@ -266,80 +276,79 @@ export class MySpaceAdminComponent implements OnInit {
   //   // appel API email
   // }
 
-  markReturned(late$: Observable<Loan>): void {
-    late$.pipe(take(1)).subscribe((late) => {
-      this.loanService.return(late.id);
-    });
+  markReturned(late$: LoanView): void {
+    this.loanService.return(late$.id);
   }
 
   // ─────────────────────────────────────────
   //  AVIS
   // ─────────────────────────────────────────
   private loadReviews(): void {
-    this.bookService.getAll().subscribe((books) => {
-      this.reviews = [
-        {
-          id: 1,
-          user: 'Sophie M.',
-          book: books[0],
-          title: 'Un classique incontournable',
-          body: "Don Quichotte reste une lecture fascinante, pleine d'humour et de profondeur. Je recommande vivement !",
-          rating: 5,
-          date: new Date('2026-05-10'),
-          status: 'pending',
-        },
-        {
-          id: 2,
-          user: 'Marc D.',
-          book: books[6],
-          title: 'Trop prévisible',
-          body: "Honnêtement, j'ai trouvé l'intrigue assez cousue de fil blanc. Pas le meilleur McFadden.",
-          rating: 2,
-          date: new Date('2026-05-09'),
-          status: 'pending',
-        },
-        {
-          id: 3,
-          user: 'Lucie P.',
-          book: books[14],
-          title: 'Orwell visionnaire',
-          body: 'Relire 1984 en 2026 est saisissant. Chaque page résonne avec notre époque. Un must absolu.',
-          rating: 5,
-          date: new Date('2026-05-08'),
-          status: 'pending',
-        },
-        {
-          id: 4,
-          user: 'Inès K.',
-          book: books[3],
-          title: 'Guide utile et drôle',
-          body: "Facile m'a redonné le sourire. Des conseils concrets emballés dans un humour bienveillant.",
-          rating: 4,
-          date: new Date('2026-05-07'),
-          status: 'approved',
-        },
-        {
-          id: 5,
-          user: 'Emma B.',
-          book: books[1],
-          title: 'Magique',
-          body: "Alice est un voyage vers l'imaginaire pur. Lewis Carroll était un génie.",
-          rating: 5,
-          date: new Date('2026-05-06'),
-          status: 'approved',
-        },
-        {
-          id: 6,
-          user: 'Paul M.',
-          book: books[7],
-          title: 'Contenu inapproprié !!',
-          body: "Ce livre est une arnaque totale, l'auteur est un imposteur et ce roman ne devrait pas exister dans cette biblio !",
-          rating: 1,
-          date: new Date('2026-05-05'),
-          status: 'rejected',
-        },
-      ];
-    });
+    this.reviewService.getAll();
+    // this.bookService.getAll().subscribe((books) => {
+    //   this.reviews = [
+    //     {
+    //       id: 1,
+    //       user: 'Sophie M.',
+    //       book: books[0],
+    //       title: 'Un classique incontournable',
+    //       body: "Don Quichotte reste une lecture fascinante, pleine d'humour et de profondeur. Je recommande vivement !",
+    //       rating: 5,
+    //       date: new Date('2026-05-10'),
+    //       status: 'pending',
+    //     },
+    //     {
+    //       id: 2,
+    //       user: 'Marc D.',
+    //       book: books[6],
+    //       title: 'Trop prévisible',
+    //       body: "Honnêtement, j'ai trouvé l'intrigue assez cousue de fil blanc. Pas le meilleur McFadden.",
+    //       rating: 2,
+    //       date: new Date('2026-05-09'),
+    //       status: 'pending',
+    //     },
+    //     {
+    //       id: 3,
+    //       user: 'Lucie P.',
+    //       book: books[14],
+    //       title: 'Orwell visionnaire',
+    //       body: 'Relire 1984 en 2026 est saisissant. Chaque page résonne avec notre époque. Un must absolu.',
+    //       rating: 5,
+    //       date: new Date('2026-05-08'),
+    //       status: 'pending',
+    //     },
+    //     {
+    //       id: 4,
+    //       user: 'Inès K.',
+    //       book: books[3],
+    //       title: 'Guide utile et drôle',
+    //       body: "Facile m'a redonné le sourire. Des conseils concrets emballés dans un humour bienveillant.",
+    //       rating: 4,
+    //       date: new Date('2026-05-07'),
+    //       status: 'approved',
+    //     },
+    //     {
+    //       id: 5,
+    //       user: 'Emma B.',
+    //       book: books[1],
+    //       title: 'Magique',
+    //       body: "Alice est un voyage vers l'imaginaire pur. Lewis Carroll était un génie.",
+    //       rating: 5,
+    //       date: new Date('2026-05-06'),
+    //       status: 'approved',
+    //     },
+    //     {
+    //       id: 6,
+    //       user: 'Paul M.',
+    //       book: books[7],
+    //       title: 'Contenu inapproprié !!',
+    //       body: "Ce livre est une arnaque totale, l'auteur est un imposteur et ce roman ne devrait pas exister dans cette biblio !",
+    //       rating: 1,
+    //       date: new Date('2026-05-05'),
+    //       status: 'rejected',
+    //     },
+    //   ];
+    // });
   }
 
   get filteredReviews(): AdminReview[] {
