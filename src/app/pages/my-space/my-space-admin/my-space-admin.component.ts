@@ -102,13 +102,12 @@ export class MySpaceAdminComponent implements OnInit {
       this.user = { ...current };
       this.userEdit = { ...current };
     } else {
-      // Sécurité au cas où l'utilisateur n'est pas chargé pour éviter le crash du template
       this.user = { id: 0, prenom: 'Admin', nom: '', email: '', role: 'ADMIN' };
       this.userEdit = { ...this.user };
     }
-    // Charger les emprunts enrichis de l'utilisateur connecté
+
     // @ts-ignore
-    this.loanService.getViewsByUserId(current.id).subscribe({
+    this.loanService.getViewsByUserId(current?.id).subscribe({
       next: (loans) => {
         this.loans = loans;
         this.loansLoading = false;
@@ -118,11 +117,20 @@ export class MySpaceAdminComponent implements OnInit {
         this.loansLoading = false;
       },
     });
-    this.loadRequests();
-    this.loadLateReturns();
+
+    // 1. On charge d'abord le catalogue de livres obligatoirement
+    this.bookService.getAll().subscribe((books) => {
+      this.books = books; // On initialise la liste globale
+      this.catalogueBooks = books;
+
+      // 2. On charge SEULEMENT MAINTENANT les fonctionnalités qui dépendent des livres
+      this.loadLateReturns();
+      this.loadRequests();
+      this.loadStats();
+    });
+
+    // 3. Le reste peut charger en parallèle
     this.loadReviews();
-    this.loadStats();
-    this.loadCatalogue();
     this.loadUsers();
     this.cdr.detectChanges();
   }
@@ -199,9 +207,9 @@ export class MySpaceAdminComponent implements OnInit {
 
   protected readonly Date = Date;
 
-  getBookByReviewId(id: number) : Observable<Book> {
-    return this.reviewService.getBookByReviewId(id).pipe()
-  };
+  getBookByReviewId(id: number): Observable<Book> {
+    return this.reviewService.getBookByReviewId(id).pipe();
+  }
 
   // ─────────────────────────────────────────
   //  DEMANDES -> for renew which we discarded / left one for example
@@ -498,21 +506,39 @@ export class MySpaceAdminComponent implements OnInit {
       return;
     }
 
-    const genres = this.newBookGenresRaw;
+    const genres = this.newBookGenresRaw || '';
 
-    this.bookService.addBook({ ...this.newBook, categorie: genres }).subscribe((book) => {
-      // message succès avec vrai Book
-      this.catalogueSuccess = `"${book.titre}" ajouté avec succès.`;
+    // On force le nettoyage des données pour le Back de Marine
+    const bookToSend = {
+      ...this.newBook,
+      categorie: genres,
+      // On force la conversion en number au cas où un composant graphique aurait injecté un boolean ou une string
+      note: Number(this.newBook.note) || 0,
+      quantite: Number(this.newBook.quantite) || 1,
+    };
 
-      // reload catalogue
-      this.bookService.getAll().subscribe((books) => {
-        this.catalogueBooks = books;
-      });
+    console.log('Données envoyées au Back pour analyse :', bookToSend);
 
-      this.showAddForm = false;
-      this.resetNewBook();
+    this.bookService.addBook(bookToSend).subscribe({
+      next: (book) => {
+        // message succès avec vrai Book
+        this.catalogueSuccess = `"${book.titre}" ajouté avec succès.`;
 
-      setTimeout(() => (this.catalogueSuccess = ''), 4000);
+        // reload catalogue
+        this.bookService.getAll().subscribe((books) => {
+          this.catalogueBooks = books;
+        });
+
+        this.showAddForm = false;
+        this.resetNewBook();
+
+        setTimeout(() => (this.catalogueSuccess = ''), 4000);
+      },
+      error: (err) => {
+        console.error('Erreur lors de l’ajout du livre :', err);
+        this.catalogueError =
+          'Erreur du serveur lors de la création du livre. Vérifiez les champs.';
+      },
     });
   }
 
