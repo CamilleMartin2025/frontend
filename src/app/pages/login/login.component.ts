@@ -36,84 +36,92 @@ export class LoginComponent {
   ) {}
 
   onLogin(): void {
-  this.loginError = '';
-  this.loginLoading = true;
+    this.loginError = '';
+    this.loginLoading = true;
 
-  if (!this.loginEmail || !this.loginPassword) {
-    this.loginError = 'Veuillez remplir tous les champs.';
-    this.loginLoading = false;
-    return;
-  }
-
-  const credentials = {
-    email: this.loginEmail,
-    password: this.loginPassword
-  };
-
-  this.auth.login(credentials).subscribe({
-    next: (response) => {
+    if (!this.loginEmail || !this.loginPassword) {
+      this.loginError = 'Veuillez remplir tous les champs.';
       this.loginLoading = false;
-      console.log('Connexion validée ! Rôle de l’utilisateur :', this.auth.currentUser()?.role);
-
-      // LA REDIRECTION SE FAIT ICI, UNE FOIS LE TOKEN REÇU ET TRAITÉ
-      if (this.auth.isAdmin()) {
-        this.router.navigate(['/admin']);
-      } else if (this.auth.isLibraire()) {
-        this.router.navigate(['/libraire']);
-      } else {
-        this.router.navigate(['/mon-espace']);
-      }
-    },
-    error: (err) => {
-      console.error('Erreur de connexion', err);
-      this.loginError = 'Identifiants invalides ou serveur hors ligne.';
-      this.loginLoading = false;
+      return;
     }
-  });
-}
+
+    const credentials = {
+      email: this.loginEmail,
+      password: this.loginPassword,
+    };
+
+    this.auth.login(credentials).subscribe({
+      next: (response) => {
+        this.loginLoading = false;
+        console.log('Connexion validée ! Rôle de l’utilisateur :', this.auth.currentUser()?.role);
+
+        // LA REDIRECTION SE FAIT ICI, UNE FOIS LE TOKEN REÇU ET TRAITÉ
+        if (this.auth.isAdmin()) {
+          this.router.navigate(['/admin']);
+        } else if (this.auth.isLibraire()) {
+          this.router.navigate(['/libraire']);
+        } else {
+          this.router.navigate(['/mon-espace']);
+        }
+      },
+      error: (err) => {
+        console.error('Erreur de connexion', err);
+        this.loginError = 'Identifiants invalides ou serveur hors ligne.';
+        this.loginLoading = false;
+      },
+    });
+  }
 
   onRegister(): void {
     this.registerError = '';
     this.registerSuccess = false;
-    this.registerLoading = true;
 
     if (
       !this.registerNom ||
       !this.registerPrenom ||
       !this.registerEmail ||
-      !this.registerPassword
+      !this.registerPassword ||
+      !this.registerDateNaissance
     ) {
       this.registerError = 'Veuillez remplir tous les champs obligatoires (*).';
-      this.registerLoading = false;
       return;
     }
 
     this.registerLoading = true;
 
-    this.auth
-      .register({
-        prenom: this.registerPrenom,
-        nom: this.registerNom,
-        email: this.registerEmail,
-        password: this.registerPassword,
-        tel: this.registerTelephone || undefined,
-        date_naissance: this.registerDateNaissance || undefined,
-      })
-      .subscribe({
-        next: (user: User) => {
-          console.log(user);
+    // Construction du DTO avec le nom EXACT attendu par Marine : dateDeNaissance
+    const registrationPayload = {
+      prenom: this.registerPrenom.trim(),
+      nom: this.registerNom.trim(),
+      email: this.registerEmail.trim(),
+      password: this.registerPassword,
+      dateDeNaissance: this.registerDateNaissance, // <-- LE CORREGIDOR ! "dateDeNaissance" avec le "De"
+      roleId: 1,
+    };
 
-          this.registerLoading = false;
-        },
+    // Ajout du téléphone s'il est présent
+    if (this.registerTelephone && this.registerTelephone.trim() !== '') {
+      // @ts-ignore
+      registrationPayload.tel = this.registerTelephone.trim();
+    }
 
-        error: (err) => {
-          this.registerError = err.error?.message ?? "Erreur lors de l'inscription.";
+    console.log("🚀 Envoi du payload d'inscription corrigé :", registrationPayload);
 
-          this.registerLoading = false;
-        },
-      });
+    this.auth.register(registrationPayload).subscribe({
+      next: (user: User) => {
+        console.log('🎉 Inscription validée en BDD !', user);
+        this.registerLoading = false;
+        this.registerSuccess = true;
 
-    // Inscription réussie → redirection vers mon espace (role 1)
-    this.router.navigate(['/mon-espace']);
+        // Redirection vers l'espace membre
+        this.router.navigate(['/mon-espace']);
+      },
+      error: (err) => {
+        console.error('❌ Erreur serveur :', err);
+        this.registerError =
+          err.error?.message || "Erreur lors de l'inscription (vérifiez si l'email existe déjà).";
+        this.registerLoading = false;
+      },
+    });
   }
 }
