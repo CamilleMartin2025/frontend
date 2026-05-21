@@ -482,7 +482,7 @@ export class MySpaceAdminComponent implements OnInit {
     date_ajout: new Date('2026-05-05'),
     isbn: '',
   };
-  newBookGenresRaw = ''; // saisie libre séparée par virgules
+  newBookGenreRaw = '';
 
   private loadCatalogue(): void {
     this.bookService.getAll().subscribe((books) => {
@@ -498,9 +498,9 @@ export class MySpaceAdminComponent implements OnInit {
       return;
     }
 
-    const genres = this.newBookGenresRaw;
+    const genre = this.newBookGenreRaw;
 
-    this.bookService.addBook({ ...this.newBook, categorie: genres }).subscribe((book) => {
+    this.bookService.addBook({ ...this.newBook, categorie: genre }).subscribe((book) => {
       // message succès avec vrai Book
       this.catalogueSuccess = `"${book.titre}" ajouté avec succès.`;
 
@@ -546,7 +546,7 @@ export class MySpaceAdminComponent implements OnInit {
       date_ajout: new Date(),
       isbn: '',
     };
-    this.newBookGenresRaw = '';
+    this.newBookGenreRaw = '';
   }
 
   // ─────────────────────────────────────────
