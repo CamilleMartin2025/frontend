@@ -62,9 +62,9 @@ export type UserRole = 1 | 2 | 3;
 //  3 = Administrateur
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  1: 'Utilisateur',
+  1: 'Administrateur',
   2: 'Libraire',
-  3: 'Administrateur'
+  3: 'Utilisateur',
 };
 
 // ── Objet User tel que renvoyé par l'API ────────────
