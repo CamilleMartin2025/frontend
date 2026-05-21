@@ -112,17 +112,24 @@ export class BookDetailComponent implements OnInit {
   }
 
   onBorrow(): void {
-    this.borrowed = true;
-
     this.book$.pipe(
       switchMap((book) => {
-        if (!book || !book.id) return of([]);
+        if (!book || !book.id) {
+          console.error("Impossible d'emprunter : livre introuvable");
+          return of(null);
+        }
         return this.loanService.borrow(book.id);
       }),
       catchError((err) => {
         console.error('borrow error', err);
-        return of([]);
-      }),
-    );
+        this.borrowed = false;
+        return of(null);
+      })
+    ).subscribe((result) => {
+      if (result) {
+        this.borrowed = true;
+        console.log("Emprunt enregistré avec succès en BDD !", result);
+      }
+    });
   }
 }

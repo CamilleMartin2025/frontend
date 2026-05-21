@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, map, switchMap, forkJoin, of } from 'rxjs';
 import { Loan, LoanView } from '../models/model';
 import { BookService } from './book.service';
@@ -14,59 +14,67 @@ export class LoanService {
     private bookService: BookService,
   ) {}
 
+  /**
+   * Centralisation de la récupération des Headers avec le Token JWT
+   */
+  private getHeaders(): HttpHeaders {
+    // On va chercher le token avec le VRAI nom utilisé par Camille
+    const token = localStorage.getItem('bookhub_token');
+
+    return new HttpHeaders({
+      Authorization: `Bearer ${token}`,
+    });
+  }
+
   // ── Récupération brute ────────────────────────────
 
   // GET Voir l'activité globale des emprunts
   getAll(): Observable<Loan[]> {
-    return this.http.get<Loan[]>(this.apiLoanUrl);
+    return this.http.get<Loan[]>(this.apiLoanUrl, { headers: this.getHeaders() });
   }
 
   // GET Récupérer mon historique
   getByUserId(): Observable<Loan[]> {
-    return this.http.get<Loan[]>(`${this.apiLoanUrl}/my`);
+    return this.http.get<Loan[]>(`${this.apiLoanUrl}/my`, { headers: this.getHeaders() });
   }
 
   // GET Voir les emprunts en retard
   getLate(): Observable<Loan[]> {
-    return this.http.get<Loan[]>(this.apiLoanUrl + '/late');
+    return this.http.get<Loan[]>(`${this.apiLoanUrl}/late`, { headers: this.getHeaders() });
   }
 
   // ── Enrichissement ────────────────────────────────
 
   /**
-   * Enrichit un Loan en LoanView de façon asynchrone :
-   * - parse les dates ISO
-   * - calcule daysLeft et isLate
-   * - récupère le Book via Observable (peut être undefined)
+   * Enrichit un Loan en LoanView de façon asynchrone
+   */
+  /**
+   * Enrichit un Loan en LoanView de façon asynchrone
    */
   enrich(loan: Loan): Observable<LoanView> {
     const today = new Date();
     const dueDate = new Date(loan.dateRetourPrevu);
     const diffMs = dueDate.getTime() - today.getTime();
     const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    // getById renvoie Observable<Book | undefined> → on l'attend avant de construire LoanView
-    // @ts-ignore
 
+    // @ts-ignore
     return this.bookService.getById(loan.livreId).pipe(
       map((book: Book | undefined) => ({
         id: loan.id,
-        livreId: loan.livreId,
-        utilisateurId: loan.utilisateurId,
+        id_livre: loan.livreId, // <-- Modifié pour correspondre à LoanView
+        id_utilisateur: loan.utilisateurId, // <-- Modifié pour correspondre à LoanView
         date_emprunt: new Date(loan.dateEmprunt),
         date_retour_prevu: dueDate,
         date_retour_effectif: loan.dateRetourEffectif ? new Date(loan.dateRetourEffectif) : null,
         daysLeft,
         isLate: daysLeft < 0 && !loan.dateRetourEffectif,
-        book, // undefined si non trouvé → géré dans le template avec ?.
+        book,
       })),
     );
   }
 
   /**
-   * Enrichit une liste de Loans en parallèle via forkJoin.
-   * forkJoin attend que tous les Observables soient complétés
-   * avant d'émettre le tableau final.
-   * Si la liste est vide, retourne of([]) directement.
+   * Enrichit une liste de Loans en parallèle
    */
   enrichAll(loans: Loan[]): Observable<LoanView[]> {
     if (loans.length === 0) return of([]);
@@ -75,7 +83,7 @@ export class LoanService {
 
   // ── Méthodes prêtes pour les templates ────────────
 
-  /** Emprunts enrichis d'un utilisateur → Observable<LoanView[]> */
+  /** Emprunts enrichis d'un utilisateur */
   getViewsByUserId(): Observable<LoanView[]> {
     return this.getByUserId().pipe(switchMap((loans) => this.enrichAll(loans)));
   }
@@ -89,15 +97,19 @@ export class LoanService {
 
   // POST Effectuer un nouvel emprunt
   borrow(id_livre: number): Observable<Loan> {
-    return this.http.post<Loan>(this.apiLoanUrl +'/loan', id_livre);
+    return this.http.post<Loan>(
+      `${this.apiLoanUrl}/loan?livreId=${id_livre}`,
+      {},
+      { headers: this.getHeaders() },
+    );
   }
-
-  // renew(loanId: number): Observable<Loan> {
-  //   return this.http.patch<Loan>(`${this.apiLoanUrl}/${loanId}/renew`, {});
-  // }
 
   // PATCH Valider le retour d'un livre
   return(loanId: number): Observable<Loan> {
-    return this.http.patch<Loan>(`${this.apiLoanUrl}/return/${loanId}`, {});
+    return this.http.patch<Loan>(
+      `${this.apiLoanUrl}/return/${loanId}`,
+      {},
+      { headers: this.getHeaders() },
+    );
   }
 }
