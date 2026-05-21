@@ -104,9 +104,9 @@ export class LoanService {
     );
   }
 
-  // PATCH Valider le retour d'un livre
-  return(loanId: number): Observable<Loan> {
-    return this.http.patch<Loan>(
+
+  return(loanId: number): Observable<any> {
+    return this.http.patch(
       `${this.apiLoanUrl}/return/${loanId}`,
       {},
       { headers: this.getHeaders() },
