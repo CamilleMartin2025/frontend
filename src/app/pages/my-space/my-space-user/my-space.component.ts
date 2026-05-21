@@ -2,7 +2,11 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Loan, User } from '../../../models/book.model';
+import { Book, Loan, LoanView, Review, User } from '../../../models/model';
+import { LoanService } from '../../../services/loan.service';
+import { AuthService } from '../../../services/authentification.service';
+import { switchMap, Observable, map } from 'rxjs';
+import { ReviewService } from '../../../services/review.service';
 
 @Component({
   selector: 'app-my-space',
@@ -14,106 +18,108 @@ import { Loan, User } from '../../../models/book.model';
 export class MySpaceComponent {
   editMode = false;
   renewSuccess: number | null = null;
+  renewError = '';
 
-  user: User = {
-    createdAt: new Date(),
-    id: 0,
-    role: 1,
-    firstName: 'Marie',
-    lastName: 'Dupont',
-    email: 'marie.dupont@email.fr',
-    phone: '06 12 34 56 78',
-    birthDate: new Date('1990-04-15')
-  };
+  constructor(
+    private loanService: LoanService,
+    private authService: AuthService,
+    private reviewService: ReviewService,
+  ) {}
 
-  userEdit: User = { ...this.user };
+  user!: User;
+  userEdit!: User;
 
-  // Données initialisées directement (pas dans ngOnInit) → pas de double cycle
-  loans: Loan[] = [
-    {
-      id: 1,
-      book: {
-        id: 13,
-        title: "L'Étranger",
-        author: 'Albert Camus',
-        cover: 'https://m.media-amazon.com/images/I/41pFLMkOqhL.jpg',
-        description: '',
-        genre: ['Classique'],
-        rating: 5,
-        available: false,
-        date: new Date(),
-      },
-      dueDate: new Date('2026-05-15'),
-      daysLeft: 3,
-      isLate: false,
-    },
-    {
-      id: 2,
-      book: {
-        id: 14,
-        title: 'Dune',
-        author: 'Frank Herbert',
-        cover: 'https://m.media-amazon.com/images/I/81ym3QUd3KL.jpg',
-        description: '',
-        genre: ['Science-fiction'],
-        rating: 5,
-        available: false,
-        date: new Date(),
-      },
-      dueDate: new Date('2026-05-01'),
-      daysLeft: -11,
-      isLate: true,
-    },
-    {
-      id: 3,
-      book: {
-        id: 15,
-        title: '1984',
-        author: 'George Orwell',
-        cover: 'https://m.media-amazon.com/images/I/71kxa2iBsNL.jpg',
-        description: '',
-        genre: ['Classique', 'Dystopie'],
-        rating: 5,
-        available: false,
-        date: new Date(),
-      },
-      dueDate: new Date('2026-05-28'),
-      daysLeft: 17,
-      isLate: false,
-    },
-  ];
+  // Typé LoanView → toutes les propriétés calculées disponibles dans le template
+  loans$!: Observable<LoanView[]>;
+  loansLoading = true;
 
-  getLoanStatus(loan: Loan): 'late' | 'urgent' | 'ok' {
+  reviews$!: Observable<Review[]>;
+
+  // Propriété pour comparaison de dates dans le template
+  today = new Date();
+
+  ngOnInit(): void {
+    const current = this.authService.currentUser();
+    console.log('CURRENT USER =', current);
+
+    if (current) {
+      this.user = { ...current };
+      this.userEdit = { ...current };
+    }
+    else {
+      // Sécurité au cas où l'utilisateur n'est pas chargé pour éviter le crash du template
+      this.user = { id: 0, prenom: 'Utilisateur', nom: '', email: '', role: 'LECTEUR' };
+      this.userEdit = { ...this.user };
+    }
+
+    this.loansLoading = true;
+
+    this.loans$ = this.loanService.getViewsByUserId();
+    console.log(this.user.id, typeof this.user.id);
+    this.reviews$ = this.reviewService.getReviewsByUser(this.user.id);
+  }
+
+  // ── Statut badge ────────────────────────────────────
+  getLoanStatus(loan: LoanView): 'late' | 'urgent' | 'ok' {
     if (loan.isLate) return 'late';
     if (loan.daysLeft <= 5) return 'urgent';
     return 'ok';
   }
 
-  getLoanLabel(loan: Loan): string {
-    return loan.isLate ? 'En retard' : `J-${loan.daysLeft}`;
+  getLoanLabel(loan: LoanView): string {
+    if (loan.isLate) return 'En retard';
+    return `J-${loan.daysLeft}`;
   }
 
-  onRenew(loan: Loan): void {
-    loan.dueDate = new Date(loan.dueDate.getTime() + 14 * 86400000);
-    loan.daysLeft += 14;
-    loan.isLate = false;
-    this.loans = [...this.loans]; // nouveau tableau → Angular détecte le changement
-    this.renewSuccess = loan.id;
-    setTimeout(() => (this.renewSuccess = null), 3000);
+  // ── Actions emprunts ────────────────────────────────
+  // onRenew(loan: LoanView): void {
+  //     this.loanService
+  //       .renew(loan.id)
+  //       .pipe(
+  //         switchMap((updated) => this.loanService.enrich(updated))
+  //       )
+  //       .subscribe({
+  //         next: (enriched) => {
+  //           this.loans$ = this.loans$.pipe(
+  //             map(loansList => loansList.map(l => l.id === loan.id ? enriched : l))
+  //           );
+  //           this.renewSuccess = loan.id;
+  //           setTimeout(() => (this.renewSuccess = null), 3000);
+  //         },
+  //         error: (err) => {
+  //           this.renewError = err.message ?? 'Erreur lors du renouvellement.';
+  //           setTimeout(() => (this.renewError = ''), 4000);
+  //         },
+  //       });
+  //   }
+
+  onReturn(loan: LoanView): void {
+    this.loanService.return(loan.id).subscribe({
+      next: () => {
+        this.loans$ = this.loans$.pipe(
+          map((loansList) => loansList.filter((l) => l.id !== loan.id)),
+        );
+      },
+      error: (err) => console.error('Erreur retour :', err),
+    });
   }
 
-  onReturn(loan: Loan): void {
-    this.loans = this.loans.filter((l) => l.id !== loan.id);
-  }
-
+  // ── Profil ───────────────────────────────────────────
   onEditToggle(): void {
     this.userEdit = { ...this.user };
     this.editMode = true;
   }
+
   onSave(): void {
-    this.user = { ...this.userEdit };
-    this.editMode = false;
+    this.authService.updateProfile(this.userEdit).subscribe({
+      next: (updated) => {
+        this.user = { ...updated };
+        this.editMode = false;
+      },
+      error: (err) => console.error('Erreur mise à jour profil :', err),
+    });
   }
+
   onCancel(): void {
     this.editMode = false;
   }
@@ -121,4 +127,10 @@ export class MySpaceComponent {
   bookColor(i: number): string {
     return ['#4a90d9', '#5cb87a', '#e07b3a'][i % 3];
   }
+
+  protected readonly Date = Date;
+
+  getBookByReviewId(id: number) : Observable<Book> {
+    return this.reviewService.getBookByReviewId(id).pipe()
+  };
 }

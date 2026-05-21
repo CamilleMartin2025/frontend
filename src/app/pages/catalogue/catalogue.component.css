@@ -311,10 +311,10 @@
 }
 
 .book-row {
-  display: grid;
+  display: flex;
   grid-template-columns: 52px 1fr 180px 90px 120px 24px;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   padding: 14px 20px;
   border-bottom: 1px solid var(--color-border);
   text-decoration: none;
@@ -345,7 +345,11 @@
 }
 
 /* Titre / auteur */
-.book-meta { min-width: 0; }
+.book-meta {
+  min-width: 0;
+  flex: 1 1 160px;
+  max-width: 220px;
+}
 
 .book-title {
   font-family: var(--font-display);
@@ -371,6 +375,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+  flex: 0 0 90px;
 }
 
 .genre-tag {
@@ -388,6 +393,7 @@
   display: flex;
   gap: 1px;
   font-size: 0.85rem;
+  flex: 0 0 90px;
 }
 
 .star.filled { color: var(--color-warning); }
@@ -402,6 +408,7 @@
   font-weight: 500;
   padding: 4px 11px;
   border-radius: var(--radius-pill);
+  flex: 0 0 110px;
 }
 
 .avail-badge.avail-yes {
@@ -463,6 +470,43 @@
 .empty-sub {
   font-size: 0.9rem;
   color: var(--color-text-muted);
+}
+
+/* Styles de la pagination discrète */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: 25px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.btn-page {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.btn-page:hover:not(:disabled) {
+  background-color: #f0f0f0;
+  border-color: #999;
+}
+
+.btn-page:disabled {
+  color: #ccc;
+  border-color: #eee;
+  cursor: not-allowed;
+}
+
+.info-page strong {
+  color: #000;
 }
 
 /* ══════════════════════════════════

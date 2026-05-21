@@ -34,7 +34,7 @@ import { AuthService } from '../services/authentification.service';
             <!-- Nom + déconnexion -->
             <div class="user-menu">
               <span class="user-greeting">
-                {{ auth.currentUser()?.firstName }}
+                {{ auth.currentUser()?.prenom }}
                 <span class="role-badge" [class]="'role-' + auth.currentUser()?.role">
                   {{ getRoleLabel() }}
                 </span>
@@ -276,8 +276,6 @@ export class NavbarComponent {
 
   getRoleLabel(): string {
     const role = this.auth.currentUser()?.role;
-    if (role === 3) return 'Admin';
-    if (role === 2) return 'Libraire';
-    return 'Membre';
+    return role || "Membre";
   }
 }

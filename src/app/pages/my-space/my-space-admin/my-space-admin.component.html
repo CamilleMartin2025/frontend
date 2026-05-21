@@ -3,9 +3,9 @@
   <!-- ══ SIDEBAR NAVIGATION ══ -->
   <aside class="admin-sidebar">
     <div class="admin-brand">
-      <span class="admin-avatar">{{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}</span>
+      <span class="admin-avatar">{{ user.prenom.charAt(0) }}{{ user.nom.charAt(0) }}</span>
       <div>
-        <p class="admin-name">{{ user.firstName }} {{ user.lastName }}</p>
+        <p class="admin-name">{{ user.prenom }} {{ user.nom }}</p>
         <p class="admin-role">Administrateur</p>
       </div>
     </div>
@@ -19,7 +19,9 @@
       <button class="nav-item" [class.active]="activeTab === 'retards'" (click)="setTab('retards')">
         <span class="nav-icon">⏰</span>
         Retards
-        <span class="nav-badge nav-badge-red" *ngIf="lateCount > 0">{{ lateCount }}</span>
+        <ng-container *ngIf="lateCount | async as count">
+          <span class="nav-badge nav-badge-red" *ngIf="count > 0">{{count}}</span>
+        </ng-container>
       </button>
       <button class="nav-item" [class.active]="activeTab === 'avis'" (click)="setTab('avis')">
         <span class="nav-icon">💬</span>
@@ -68,11 +70,11 @@
       <div class="requests-list">
         <div class="request-card" *ngFor="let req of filteredRequests" [class.approved]="req.status === 'approved'" [class.rejected]="req.status === 'rejected'">
           <div class="req-book-thumb">
-            <img [src]="req.book.cover" [alt]="req.book.title" />
+<!--            <img [src]="req.book.cover" [alt]="req.book.title" />-->
           </div>
           <div class="req-info">
-            <p class="req-book-title">{{ req.book.title }}</p>
-            <p class="req-book-author">{{ req.book.author }}</p>
+            <p class="req-book-title">{{ req.book.titre }}</p>
+            <p class="req-book-author">{{ req.book.auteur }}</p>
             <p class="req-user">
               <span class="req-user-dot"></span>{{ req.user }}
             </p>
@@ -106,39 +108,42 @@
     <section *ngIf="activeTab === 'retards'" class="tab-content fade-up">
       <div class="tab-header">
         <h1 class="tab-title">Retards de retour</h1>
-        <p class="tab-sub">{{ lateCount }} livre{{ lateCount > 1 ? 's' : '' }} non retourné{{ lateCount > 1 ? 's' : '' }}</p>
+        <ng-container *ngIf="lateCount | async as count">
+          <p class="tab-sub">{{ lateCount }} livre{{ count > 1 ? 's' : '' }} non retourné{{ count > 1 ? 's' : '' }}</p>
+        </ng-container>
+
       </div>
 
       <div class="late-list">
-        <div class="late-card" *ngFor="let late of lateReturns">
+        <div class="late-card" *ngFor="let late of (lateReturns$ | async)">
           <div class="late-thumb">
-            <img [src]="late.book.cover" [alt]="late.book.title" />
+<!--            <img [src]="late.book.cover" [alt]="late.book.title" />-->
           </div>
           <div class="late-info">
-            <p class="late-book">{{ late.book.title }}</p>
-            <p class="late-author">{{ late.book.author }}</p>
-            <p class="late-user">{{ late.user }} — <a [href]="'mailto:' + late.userEmail" class="late-email">{{ late.userEmail }}</a></p>
+            <p class="late-book">{{ late.book.titre }}</p>
+            <p class="late-author">{{ late.book.auteur }}</p>
+<!--            <p class="late-user">{{ late.user }} — <a [href]="'mailto:' + late.userEmail" class="late-email">{{ late.userEmail }}</a></p>-->
           </div>
           <div class="late-center">
-            <p class="late-due">Dû le {{ late.dueDate | date:'d MMM yyyy' : '' : 'fr' }}</p>
-            <span class="late-days-badge">{{ late.daysLate }} jour{{ late.daysLate > 1 ? 's' : '' }} de retard</span>
+            <p class="late-due">Dû le {{ late.date_retour_prevu | date:'d MMM yyyy' : '' : 'fr' }}</p>
+<!--            <span class="late-days-badge">{{ late.daysLate }} jour{{ late.daysLate > 1 ? 's' : '' }} de retard</span>-->
           </div>
           <div class="late-actions">
-            <button
-              class="btn-reminder"
-              [class.sent]="late.reminderSent"
-              [disabled]="late.reminderSent"
-              (click)="sendReminder(late)"
-            >
-              {{ late.reminderSent ? '✓ Rappel envoyé' : '✉ Envoyer rappel' }}
-            </button>
+<!--            <button-->
+<!--              class="btn-reminder"-->
+<!--              [class.sent]="late.reminderSent"-->
+<!--              [disabled]="late.reminderSent"-->
+<!--              (click)="sendReminder(late)"-->
+<!--            >-->
+<!--              {{ late.reminderSent ? '✓ Rappel envoyé' : '✉ Envoyer rappel' }}-->
+<!--            </button>-->
             <button class="btn-returned" (click)="markReturned(late)">
               Marquer retourné
             </button>
           </div>
         </div>
 
-        <div class="empty-state" *ngIf="lateReturns.length === 0">
+        <div class="empty-state" *ngIf="(lateCount | async) === 0">
           <p>🎉 Aucun retard en cours !</p>
         </div>
       </div>
@@ -160,10 +165,10 @@
         <div class="review-card-admin" *ngFor="let review of filteredReviews" [class.approved]="review.status === 'approved'" [class.rejected]="review.status === 'rejected'">
           <div class="review-header">
             <div class="review-book-info">
-              <img [src]="review.book.cover" [alt]="review.book.title" class="review-book-thumb" />
+<!--              <img [src]="review.book.cover" [alt]="review.book.title" class="review-book-thumb" />-->
               <div>
-                <p class="review-book-title">{{ review.book.title }}</p>
-                <p class="review-book-author">{{ review.book.author }}</p>
+                <p class="review-book-title">{{ review.book.titre }}</p>
+                <p class="review-book-author">{{ review.book.auteur }}</p>
               </div>
             </div>
             <div class="review-meta-right">
@@ -221,13 +226,13 @@
           <div class="top-list">
             <div class="top-item" *ngFor="let book of topRated; let i = index">
               <span class="top-rank" [class.gold]="i===0" [class.silver]="i===1" [class.bronze]="i===2">{{ i + 1 }}</span>
-              <img [src]="book.cover" [alt]="book.title" class="top-thumb" />
+<!--              <img [src]="book.cover" [alt]="book.title" class="top-thumb" />-->
               <div class="top-info">
-                <p class="top-title">{{ book.title }}</p>
-                <p class="top-author">{{ book.author }}</p>
+                <p class="top-title">{{ book.titre }}</p>
+                <p class="top-author">{{ book.auteur }}</p>
               </div>
               <div class="top-stars">
-                <span *ngFor="let f of starsArray(book.rating)">{{ f ? '★' : '☆' }}</span>
+                <span *ngFor="let f of starsArray(book.note)">{{ f ? '★' : '☆' }}</span>
               </div>
             </div>
           </div>
@@ -239,13 +244,13 @@
           <div class="top-list">
             <div class="top-item" *ngFor="let book of topBorrowed; let i = index">
               <span class="top-rank" [class.gold]="i===0" [class.silver]="i===1" [class.bronze]="i===2">{{ i + 1 }}</span>
-              <img [src]="book.cover" [alt]="book.title" class="top-thumb" />
+<!--              <img [src]="book.cover" [alt]="book.title" class="top-thumb" />-->
               <div class="top-info">
-                <p class="top-title">{{ book.title }}</p>
-                <p class="top-author">{{ book.author }}</p>
+                <p class="top-title">{{ book.titre }}</p>
+                <p class="top-author">{{ book.auteur }}</p>
               </div>
-              <span class="top-avail" [class.avail-yes]="book.available" [class.avail-no]="!book.available">
-                {{ book.available ? 'Dispo' : 'Emprunté' }}
+              <span class="top-avail" [class.avail-yes]="book.quantite > 0" [class.avail-no]="book.quantite == 0">
+                {{ book.quantite == 0 ? 'Dispo' : 'Emprunté' }}
               </span>
             </div>
           </div>
@@ -274,36 +279,42 @@
         <h1 class="tab-title">Mon espace</h1>
       </div>
 
-      <!-- Alerte renouvellement -->
+      <!-- Messages -->
       <div class="alert-success" *ngIf="renewSuccess !== null">
-        Emprunt renouvelé de 14 jours avec succès !
+        Emprunt renouvelé avec succès !
+      </div>
+      <div class="alert-error" *ngIf="renewError">{{ renewError }}</div>
+
+      <!-- Chargement -->
+      <div class="loading-state" *ngIf="loansLoading">
+        <p>Chargement de vos emprunts...</p>
       </div>
 
       <!-- Mes emprunts -->
       <div class="loans-list">
-        <div class="loan-item" *ngFor="let loan of myLoans; let i = index" [class.loan-late]="loan.isLate">
+        <div class="loan-item" *ngFor="let loan of loans; let i = index" [class.loan-late]="loan.isLate">
           <div class="loan-thumb">
-            <img *ngIf="loan.book.cover" [src]="loan.book.cover" [alt]="loan.book.title" />
-            <div *ngIf="!loan.book.cover" class="loan-thumb-placeholder" [style.background]="bookColor(i)"></div>
+<!--            <img *ngIf="loan.book.cover" [src]="loan.book.cover" [alt]="loan.book.title" />-->
+<!--            <div *ngIf="!loan.book.cover" class="loan-thumb-placeholder" [style.background]="bookColor(i)"></div>-->
           </div>
           <div class="loan-info">
-            <p class="loan-title">{{ loan.book.title }}</p>
-            <p class="loan-author">{{ loan.book.author }}</p>
+            <p class="loan-title">{{ loan.book.titre }}</p>
+            <p class="loan-author">{{ loan.book.auteur }}</p>
           </div>
           <div class="loan-date">
             <span class="loan-date-label">Retour le</span>
             <span class="loan-date-value" [class.date-late]="loan.isLate">
-              {{ loan.dueDate | date:'d MMMM yyyy' : '' : 'fr' }}
+              {{ loan.date_retour_prevu | date:'d MMMM yyyy' : '' : 'fr' }}
             </span>
           </div>
           <div class="loan-badge" [class.badge-late]="getLoanStatus(loan) === 'late'" [class.badge-urgent]="getLoanStatus(loan) === 'urgent'" [class.badge-ok]="getLoanStatus(loan) === 'ok'">
             {{ getLoanLabel(loan) }}
           </div>
-          <button *ngIf="!loan.isLate" class="btn-action btn-renew" (click)="onRenewMyLoan(loan)">Renouveler</button>
-          <button *ngIf="loan.isLate"  class="btn-action btn-return" (click)="onReturnMyLoan(loan)">Retourner</button>
+<!--          <button *ngIf="!loan.isLate" class="btn-action btn-renew" (click)="onRenew(loan)">Renouveler</button>-->
+          <button *ngIf="loan.isLate"  class="btn-action btn-return" (click)="onReturn(loan)">Retourner</button>
         </div>
 
-        <div class="empty-state" *ngIf="myLoans.length === 0">
+        <div class="empty-state" *ngIf="loans.length === 0">
           <p>Aucun emprunt en cours.</p>
           <a routerLink="/catalogue" class="btn-primary" style="margin-top:14px; display:inline-block">Parcourir le catalogue</a>
         </div>
@@ -317,10 +328,10 @@
         <div class="personal-edit" *ngIf="editMode">
           <h2 class="edit-title">Modifier mes informations</h2>
           <div class="edit-grid">
-            <div class="form-group"><label class="form-label">Prénom</label><input type="text"  class="form-input" [(ngModel)]="userEdit.firstName" /></div>
-            <div class="form-group"><label class="form-label">Nom</label>   <input type="text"  class="form-input" [(ngModel)]="userEdit.lastName"  /></div>
+            <div class="form-group"><label class="form-label">Prénom</label><input type="text"  class="form-input" [(ngModel)]="userEdit.prenom" /></div>
+            <div class="form-group"><label class="form-label">Nom</label>   <input type="text"  class="form-input" [(ngModel)]="userEdit.nom"  /></div>
             <div class="form-group"><label class="form-label">Email</label> <input type="email" class="form-input" [(ngModel)]="userEdit.email"     /></div>
-            <div class="form-group"><label class="form-label">Téléphone</label><input type="tel" class="form-input" [(ngModel)]="userEdit.phone"  /></div>
+            <div class="form-group"><label class="form-label">Téléphone</label><input type="tel" class="form-input" [(ngModel)]="userEdit.tel"  /></div>
           </div>
           <div class="edit-actions">
             <button class="btn-primary" (click)="onSave()">Enregistrer</button>
@@ -352,15 +363,15 @@
         <div class="add-book-grid">
           <div class="form-group">
             <label class="form-label">Titre <span class="required">*</span></label>
-            <input type="text" class="form-input" [(ngModel)]="newBook.title" placeholder="Don Quichotte" />
+            <input type="text" class="form-input" [(ngModel)]="newBook.titre" placeholder="Don Quichotte" />
           </div>
           <div class="form-group">
             <label class="form-label">Auteur <span class="required">*</span></label>
-            <input type="text" class="form-input" [(ngModel)]="newBook.author" placeholder="Cervantes" />
+            <input type="text" class="form-input" [(ngModel)]="newBook.auteur" placeholder="Cervantes" />
           </div>
           <div class="form-group">
             <label class="form-label">URL de couverture</label>
-            <input type="url" class="form-input" [(ngModel)]="newBook.cover" placeholder="https://..." />
+<!--            <input type="url" class="form-input" [(ngModel)]="newBook.cover" placeholder="https://..." />-->
           </div>
           <div class="form-group">
             <label class="form-label">Catégories <span class="form-hint">(séparées par des virgules)</span></label>
@@ -368,15 +379,15 @@
           </div>
           <div class="form-group form-group-full">
             <label class="form-label">Description</label>
-            <textarea class="form-input form-textarea" [(ngModel)]="newBook.description" rows="3" placeholder="Résumé du livre..."></textarea>
+            <textarea class="form-input form-textarea" [(ngModel)]="newBook.resume" rows="3" placeholder="Résumé du livre..."></textarea>
           </div>
           <div class="form-group">
             <label class="form-label">Note (0-5)</label>
-            <input type="number" class="form-input" [(ngModel)]="newBook.rating" min="0" max="5" />
+            <input type="number" class="form-input" [(ngModel)]="newBook.note" min="0" max="5" />
           </div>
           <div class="form-group form-check-group">
             <label class="form-check-label">
-              <input type="checkbox" [(ngModel)]="newBook.available" />
+              <input type="checkbox" [(ngModel)]="newBook.quantite" />
               <span>Disponible à l'emprunt</span>
             </label>
           </div>
@@ -391,26 +402,26 @@
       <div class="catalogue-admin-list">
         <div class="catalogue-admin-row" *ngFor="let book of catalogueBooks">
           <div class="cat-thumb">
-            <img *ngIf="book.cover" [src]="book.cover" [alt]="book.title" />
-            <div *ngIf="!book.cover" class="cat-thumb-placeholder">📖</div>
+<!--            <img *ngIf="book.cover" [src]="book.cover" [alt]="book.title" />-->
+<!--            <div *ngIf="!book.cover" class="cat-thumb-placeholder">📖</div>-->
           </div>
           <div class="cat-info">
-            <p class="cat-title">{{ book.title }}</p>
-            <p class="cat-author">{{ book.author }}</p>
+            <p class="cat-title">{{ book.titre }}</p>
+            <p class="cat-author">{{ book.auteur }}</p>
             <div class="cat-genres">
-              <span class="genre-tag" *ngFor="let g of book.genre">{{ g }}</span>
+              <span class="genre-tag">{{ book.categorie }}</span>
             </div>
           </div>
           <div class="cat-center">
             <button
               class="avail-toggle"
-              [class.avail-yes]="book.available"
-              [class.avail-no]="!book.available"
-              (click)="toggleAvailability(book)"
+              [class.avail-yes]="book.quantite > 0"
+              [class.avail-no]="book.quantite == 0"
+              (click)="setBorrowQuantity(book)"
               title="Cliquer pour basculer la disponibilité"
             >
               <span class="avail-dot"></span>
-              {{ book.available ? 'Disponible' : 'Emprunté' }}
+              {{ book.quantite == 0 ? 'Disponible' : 'Emprunté' }}
             </button>
           </div>
           <div class="cat-actions">
@@ -459,13 +470,12 @@
         <!-- Lignes -->
         <div class="users-table-row" *ngFor="let user of filteredUsers">
           <div class="user-cell-name">
-            <div class="user-mini-avatar">{{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}</div>
+            <div class="user-mini-avatar">{{ user.prenom.charAt(0) }}{{ user.nom.charAt(0) }}</div>
             <div>
-              <p class="user-fullname">{{ user.firstName }} {{ user.lastName }}</p>
+              <p class="user-fullname">{{ user.prenom }} {{ user.nom }}</p>
             </div>
           </div>
           <div class="user-cell-email">{{ user.email }}</div>
-          <div class="user-cell-date">{{ user.createdAt | date:'MMM yyyy' : '' : 'fr' }}</div>
           <div class="user-cell-role">
             <select
               class="role-select"

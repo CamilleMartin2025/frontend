@@ -1,9 +1,10 @@
-import { Component, OnInit, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { Book } from '../../models/model';
 import { BookService } from '../../services/book.service';
-import { Book } from '../../models/book.model';
+import { isEmpty } from 'rxjs';
 
 type SortOption = 'title-asc' | 'title-desc' | 'author-asc' | 'rating-desc';
 
@@ -17,7 +18,7 @@ type SortOption = 'title-asc' | 'title-desc' | 'author-asc' | 'rating-desc';
 export class CatalogueComponent implements OnInit {
   // Tous les filtres en signals
   searchQuery = signal('');
-  selectedGenres = signal<string[]>([]);
+  selectedCategories = signal<string[]>([]);
   availabilityFilter = signal<'all' | 'available' | 'unavailable'>('all');
   sortBy = signal<SortOption>('title-asc');
   filtersOpen = signal(false);
@@ -26,36 +27,60 @@ export class CatalogueComponent implements OnInit {
   private allBooksSignal = signal<Book[]>([]);
   allGenres: string[] = [];
 
-  constructor(private bookService: BookService) {}
+  // Pagination
+  pageActuelle = signal<number>(1);
+  livresParPage = 20;
+  // Calcul du nombre total de pages
+  totalPages = computed(() => Math.ceil(this.allBooksSignal().length / this.livresParPage));
+  // Les livres à afficher pour la page active (Découpage de l'index)
+  livresAffiches = computed(() => {
+    const indexDebut = (this.pageActuelle() - 1) * this.livresParPage;
+    const indexFin = indexDebut + this.livresParPage;
+    return this.allBooksSignal().slice(indexDebut, indexFin);
+  });
+  // Méthode pour changer de page
+  changerPage(nouvellePage: number): void {
+    if (nouvellePage >= 1 && nouvellePage <= this.totalPages()) {
+      this.pageActuelle.set(nouvellePage);
+    }
+  }
+
+  constructor(
+    private bookService: BookService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
-    const books = this.bookService.getAll();
-    // Mise à jour synchrone du signal → computed() se recalcule une seule fois
-    this.allBooksSignal.set(books);
-    this.allGenres = [...new Set(books.flatMap((b) => b.genre))].sort();
+    this.bookService.getAll().subscribe((books) => {
+      this.allBooksSignal.set(books);
+
+      this.allGenres = [...new Set(books.flatMap((b) => b.categorie))].sort();
+
+      this.cdr.detectChanges();
+    });
   }
 
   // computed() dépend uniquement de signals → recalcul garanti et synchrone
   filteredBooks = computed(() => {
-    const books = this.allBooksSignal(); // ← signal, réactif
+    const books = this.livresAffiches(); // ← signal, réactif
     const q = this.searchQuery().toLowerCase().trim();
-    const genres = this.selectedGenres();
+    const categories = this.selectedCategories();
     const avail = this.availabilityFilter();
     const sort = this.sortBy();
 
     const result = books.filter((book) => {
       const matchSearch =
         !q ||
-        book.title.toLowerCase().includes(q) ||
-        book.author.toLowerCase().includes(q) ||
-        book.genre.some((g) => g.toLowerCase().includes(q));
+        book.titre.toLowerCase().includes(q) ||
+        book.auteur.toLowerCase().includes(q) ||
+        book.categorie.toLowerCase().includes(q);
 
-      const matchGenre = genres.length === 0 || book.genre.some((g) => genres.includes(g));
+      const matchGenre = categories.length === 0 || categories.includes(book.categorie);
 
       const matchAvail =
         avail === 'all' ||
-        (avail === 'available' && book.available) ||
-        (avail === 'unavailable' && !book.available);
+        (avail === 'available' && book.quantite > 0) ||
+        (avail === 'unavailable' && book.quantite == 0);
 
       return matchSearch && matchGenre && matchAvail;
     });
@@ -63,13 +88,13 @@ export class CatalogueComponent implements OnInit {
     return [...result].sort((a, b) => {
       switch (sort) {
         case 'title-asc':
-          return a.title.localeCompare(b.title, 'fr');
+          return a.titre.localeCompare(b.titre, 'fr');
         case 'title-desc':
-          return b.title.localeCompare(a.title, 'fr');
+          return b.titre.localeCompare(a.titre, 'fr');
         case 'author-asc':
-          return a.author.localeCompare(b.author, 'fr');
+          return a.auteur.localeCompare(b.auteur, 'fr');
         case 'rating-desc':
-          return b.rating - a.rating;
+          return b.note - a.note;
         default:
           return 0;
       }
@@ -78,22 +103,22 @@ export class CatalogueComponent implements OnInit {
 
   resultCount = computed(() => this.filteredBooks().length);
   hasActiveFilters = computed(
-    () => this.selectedGenres().length > 0 || this.availabilityFilter() !== 'all',
+    () => this.selectedCategories().length > 0 || this.availabilityFilter() !== 'all',
   );
 
   onSearch(value: string) {
     this.searchQuery.set(value);
   }
 
-  toggleGenre(genre: string) {
-    const current = this.selectedGenres();
-    this.selectedGenres.set(
-      current.includes(genre) ? current.filter((g) => g !== genre) : [...current, genre],
+  toggleCategory(cat: string): void {
+    const current = this.selectedCategories();
+    this.selectedCategories.set(
+      current.includes(cat) ? current.filter((c) => c !== cat) : [...current, cat],
     );
   }
 
-  isGenreSelected(genre: string): boolean {
-    return this.selectedGenres().includes(genre);
+  isCategorySelected(cat: string): boolean {
+    return this.selectedCategories().includes(cat);
   }
 
   setAvailability(v: 'all' | 'available' | 'unavailable') {
@@ -107,7 +132,7 @@ export class CatalogueComponent implements OnInit {
   }
 
   clearFilters() {
-    this.selectedGenres.set([]);
+    this.selectedCategories.set([]);
     this.availabilityFilter.set('all');
   }
 

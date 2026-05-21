@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/authentification.service';
+import { User } from '../../models/model';
 
 @Component({
   selector: 'app-login',
@@ -35,39 +36,41 @@ export class LoginComponent {
   ) {}
 
   onLogin(): void {
-    this.loginError = '';
-    this.loginLoading = true;
+  this.loginError = '';
+  this.loginLoading = true;
 
-    if (!this.loginEmail || !this.loginPassword) {
-      this.loginError = 'Veuillez remplir tous les champs.';
-      this.loginLoading = false;
-      return;
-    }
-
-    // Changement ici : on s'abonne à l'appel API
-    this.auth
-      .login({
-        email: this.loginEmail,
-        password: this.loginPassword,
-      })
-      .subscribe({
-        next: (result) => {
-          this.loginLoading = false;
-          if (result.success) {
-            // Redirection selon le rôle une fois connecté
-            if (this.auth.isAdmin()) this.router.navigate(['/admin']);
-            else if (this.auth.isLibraire()) this.router.navigate(['/libraire']);
-            else this.router.navigate(['/mon-espace']);
-          } else {
-            this.loginError = result.error ?? 'Erreur de connexion.';
-          }
-        },
-        error: () => {
-          this.loginLoading = false;
-          this.loginError = 'Erreur technique avec le serveur.';
-        },
-      });
+  if (!this.loginEmail || !this.loginPassword) {
+    this.loginError = 'Veuillez remplir tous les champs.';
+    this.loginLoading = false;
+    return;
   }
+
+  const credentials = {
+    email: this.loginEmail,
+    password: this.loginPassword
+  };
+
+  this.auth.login(credentials).subscribe({
+    next: (response) => {
+      this.loginLoading = false;
+      console.log('Connexion validée ! Rôle de l’utilisateur :', this.auth.currentUser()?.role);
+
+      // LA REDIRECTION SE FAIT ICI, UNE FOIS LE TOKEN REÇU ET TRAITÉ
+      if (this.auth.isAdmin()) {
+        this.router.navigate(['/admin']);
+      } else if (this.auth.isLibraire()) {
+        this.router.navigate(['/libraire']);
+      } else {
+        this.router.navigate(['/mon-espace']);
+      }
+    },
+    error: (err) => {
+      console.error('Erreur de connexion', err);
+      this.loginError = 'Identifiants invalides ou serveur hors ligne.';
+      this.loginLoading = false;
+    }
+  });
+}
 
   onRegister(): void {
     this.registerError = '';
@@ -83,31 +86,34 @@ export class LoginComponent {
       this.registerError = 'Veuillez remplir tous les champs obligatoires (*).';
       this.registerLoading = false;
       return;
-    }   
+    }
 
-    // Changement ici aussi : on s'abonne à l'inscription
+    this.registerLoading = true;
+
     this.auth
       .register({
-        firstName: this.registerPrenom,
-        lastName: this.registerNom,
+        prenom: this.registerPrenom,
+        nom: this.registerNom,
         email: this.registerEmail,
         password: this.registerPassword,
-        phone: this.registerTelephone || undefined,
-        birthDate: this.registerDateNaissance || undefined,
+        tel: this.registerTelephone || undefined,
+        date_naissance: this.registerDateNaissance || undefined,
       })
       .subscribe({
-        next: (result) => {
+        next: (user: User) => {
+          console.log(user);
+
           this.registerLoading = false;
-          if (result.success) {
-            this.router.navigate(['/mon-espace']);
-          } else {
-            this.registerError = result.error ?? "Erreur lors de l'inscription.";
-          }
         },
-        error: () => {
+
+        error: (err) => {
+          this.registerError = err.error?.message ?? "Erreur lors de l'inscription.";
+
           this.registerLoading = false;
-          this.registerError = 'Le serveur ne répond pas.';
         },
       });
+
+    // Inscription réussie → redirection vers mon espace (role 1)
+    this.router.navigate(['/mon-espace']);
   }
 }

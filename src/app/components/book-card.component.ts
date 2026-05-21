@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Book } from '../models/book.model';
+import { Book } from '../models/model';
 
 @Component({
   selector: 'app-book-card',
@@ -11,16 +11,16 @@ import { Book } from '../models/book.model';
     <div class="book-card">
       <a [routerLink]="['/book', book.id]" class="cover-link">
         <div class="book-cover">
-          <img [src]="book.cover" [alt]="book.title" loading="lazy" />
+<!--          <img [src]="book.cover" [alt]="book.title" loading="lazy" />-->
           <div class="cover-overlay">
             <span>Voir le livre</span>
           </div>
         </div>
       </a>
       <div class="book-info">
-        <h3 class="book-title">{{ book.title }}</h3>
-        <p class="book-author">{{ book.author }}</p>
-        <p class="book-desc">{{ book.description }}</p>
+        <h3 class="book-title">{{ book.titre }}</h3>
+        <p class="book-author">{{ book.auteur }}</p>
+        <p class="book-desc">{{ book.resume }}</p>
         <a [routerLink]="['/book', book.id]" class="btn-primary discover-btn">Découvrir</a>
       </div>
     </div>

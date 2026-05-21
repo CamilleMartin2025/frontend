@@ -1,3 +1,5 @@
+
+
 <section class="hero">
   <div class="container">
     <h1 class="hero-title">Bonjour <span class="user-name">[User]</span>,</h1>
@@ -11,19 +13,14 @@
   </div>
 </section>
 
-<!-- Livres les plus empruntés -->
-<section class="books-section container">
-  <h2 class="section-title">Livres les plus souvent empruntés</h2>
-  <div class="books-grid">
-    <app-book-card *ngFor="let book of mostBorrowed" [book]="book" />
-  </div>
-</section>
-
 <!-- Livres les mieux notés -->
 <section class="books-section container">
   <h2 class="section-title">Livres les mieux notés</h2>
   <div class="books-grid">
-    <app-book-card *ngFor="let book of topRated" [book]="book" />
+    <app-book-card
+      *ngFor="let book of topRated | async"
+      [book]="book">
+    </app-book-card>
   </div>
 </section>
 
@@ -31,23 +28,11 @@
 <section class="books-section container">
   <h2 class="section-title">Nouveaux livres</h2>
   <div class="books-grid">
-    <app-book-card *ngFor="let book of newBooks" [book]="book" />
+    <app-book-card
+      *ngFor="let book of newBooks | async"
+      [book]="book">
+    </app-book-card>
   </div>
 </section>
 
-<!-- Événements -->
-<section class="events-section container">
-  <h2 class="section-title">Évènements à venir</h2>
-  <div class="events-grid">
-    <div class="event-card" *ngFor="let event of upcomingEvents">
-      <div class="event-img-wrap">
-        <img [src]="event.image" [alt]="event.title" class="event-img" />
-      </div>
-      <div class="event-info">
-        <h3 class="event-title">{{ event.title }}</h3>
-        <p class="event-desc">{{ event.description }}</p>
-        <a routerLink="/" class="btn-primary event-btn">Découvrir</a>
-      </div>
-    </div>
-  </div>
-</section>
+

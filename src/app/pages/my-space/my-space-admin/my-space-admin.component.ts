@@ -4,18 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { BookService } from '../../../services/book.service';
 import { AuthService } from '../../../services/authentification.service';
-import { Book, Loan, User, UserRole, ROLE_LABELS } from '../../../models/book.model';
+import { Book, Loan, Review, User, UserRole, ROLE_LABELS, LoanView } from '../../../models/model';
+import { map, Observable, switchMap, take } from 'rxjs';
+import { LoanService } from '../../../services/loan.service';
+import { ReviewService } from '../../../services/review.service';
 
-type AdminTab =
-  | 'emprunts'
-  | 'retards'
-  | 'avis'
-  | 'stats'
-  | 'catalogue'
-  | 'utilisateurs'
-  | 'mon-espace';
+type AdminTab = 'emprunts' | 'retards' | 'avis' | 'stats' | 'catalogue' | 'utilisateurs' | 'mon-espace';
 
-// Interfaces locales (gardées telles quelles pour la cohérence de Camille)
 interface BorrowRequest {
   id: number;
   user: string;
@@ -25,15 +20,7 @@ interface BorrowRequest {
   currentDueDate?: Date;
   status: 'pending' | 'approved' | 'rejected';
 }
-interface LateReturn {
-  id: number;
-  user: string;
-  userEmail: string;
-  book: Book;
-  dueDate: Date;
-  daysLate: number;
-  reminderSent: boolean;
-}
+
 interface AdminReview {
   id: number;
   user: string;
@@ -44,6 +31,7 @@ interface AdminReview {
   date: Date;
   status: 'pending' | 'approved' | 'rejected';
 }
+
 interface Stat {
   label: string;
   value: string | number;
@@ -60,46 +48,76 @@ interface Stat {
 })
 export class MySpaceAdminComponent implements OnInit {
   activeTab: AdminTab = 'emprunts';
+
+  // ── Mon espace (identique à MySpaceComponent) ──
   editMode = false;
   renewSuccess: number | null = null;
+  renewError = '';
 
-  // Initialisé avec des données vides, sera rempli par le service
-  user: User = {
-    id: 0,
-    firstName: 'Admin',
-    lastName: 'Bibliothèque',
-    email: '',
-    role: 3,
-    createdAt: new Date(),
-  };
-  userEdit: User = { ...this.user };
+  user!: User;
+  userEdit!: User;
 
-  myLoans: Loan[] = [];
+  // Typé LoanView → toutes les propriétés calculées disponibles dans le template
+  loans: LoanView[] = [];
+  loansLoading = true;
+
+  // Propriété pour comparaison de dates dans le template
+  today = new Date();
+
+  books!: Book[];
+
+  // ── Demandes d'emprunts / prolongements ──
   requests: BorrowRequest[] = [];
   requestFilter: 'all' | 'emprunt' | 'prolongement' = 'all';
-  lateReturns: LateReturn[] = [];
+
+  // ── Retards ──
+  lateReturns$!: Observable<LoanView[]>;
+  lateCount$!: Observable<number>;
+
+  // ── Avis à modérer ──
   reviews: AdminReview[] = [];
   reviewFilter: 'all' | 'pending' | 'approved' | 'rejected' = 'pending';
+
+  myReviews: Review[] = [];
+
+  // ── Stats ──
   stats: Stat[] = [];
-  topRated: Book[] = [];
-  topBorrowed: Book[] = [];
+  topRated!: Book[];
+  topBorrowed!: Book[];
   genreStats: { genre: string; count: number; pct: number }[] = [];
 
   constructor(
     private bookService: BookService,
     private authService: AuthService,
+    private loanService: LoanService,
     private cdr: ChangeDetectorRef,
+    private reviewService: ReviewService,
   ) {}
 
   ngOnInit(): void {
-    // On récupère le vrai utilisateur connecté
-    const currentUser = this.authService.currentUser();
-    if (currentUser) {
-      this.user = currentUser;
+    const current = this.authService.currentUser();
+    console.log('CURRENT USER =', current);
+
+    if (current) {
+      this.user = { ...current };
+      this.userEdit = { ...current };
+    } else {
+      // Sécurité au cas où l'utilisateur n'est pas chargé pour éviter le crash du template
+      this.user = { id: 0, prenom: 'Admin', nom: '', email: '', role: 'ADMIN' };
       this.userEdit = { ...this.user };
     }
-
-    this.loadMyLoans();
+    // Charger les emprunts enrichis de l'utilisateur connecté
+    // @ts-ignore
+    this.loanService.getViewsByUserId(current.id).subscribe({
+      next: (loans) => {
+        this.loans = loans;
+        this.loansLoading = false;
+      },
+      error: (err) => {
+        console.error('Erreur chargement emprunts :', err);
+        this.loansLoading = false;
+      },
+    });
     this.loadRequests();
     this.loadLateReturns();
     this.loadReviews();
@@ -110,7 +128,429 @@ export class MySpaceAdminComponent implements OnInit {
   }
 
   // ─────────────────────────────────────────
-  //  LOGIQUE UTILISATEURS (CORRIGÉE)
+  //  MON ESPACE
+  // ─────────────────────────────────────────
+
+  // ── Statut badge ────────────────────────────────────
+  getLoanStatus(loan: LoanView): 'late' | 'urgent' | 'ok' {
+    if (loan.isLate) return 'late';
+    if (loan.daysLeft <= 5) return 'urgent';
+    return 'ok';
+  }
+
+  getLoanLabel(loan: LoanView): string {
+    if (loan.isLate) return 'En retard';
+    return `J-${loan.daysLeft}`;
+  }
+
+  // ── Actions emprunts ────────────────────────────────
+  // onRenew(loan: LoanView): void {
+  //   this.loanService
+  //     .renew(loan.id)
+  //     .pipe(
+  //       // enrich() est async → on enchaîne avec switchMap
+  //       switchMap((updated) => this.loanService.enrich(updated)),
+  //     )
+  //     .subscribe({
+  //       next: (enriched) => {
+  //         this.loans = this.loans.map((l) => (l.id === loan.id ? enriched : l));
+  //         this.renewSuccess = loan.id;
+  //         setTimeout(() => (this.renewSuccess = null), 3000);
+  //       },
+  //       error: (err) => {
+  //         this.renewError = err.message ?? 'Erreur lors du renouvellement.';
+  //         setTimeout(() => (this.renewError = ''), 4000);
+  //       },
+  //     });
+  // }
+
+  onReturn(loan: LoanView): void {
+    this.loanService.return(loan.id).subscribe({
+      next: () => {
+        this.loans = this.loans.filter((l) => l.id !== loan.id);
+      },
+      error: (err) => console.error('Erreur retour :', err),
+    });
+  }
+
+  // ── Profil ───────────────────────────────────────────
+  onEditToggle(): void {
+    this.userEdit = { ...this.user };
+    this.editMode = true;
+  }
+
+  onSave(): void {
+    this.authService.updateProfile(this.userEdit).subscribe({
+      next: (updated) => {
+        this.user = { ...updated };
+        this.editMode = false;
+      },
+      error: (err) => console.error('Erreur mise à jour profil :', err),
+    });
+  }
+
+  onCancel(): void {
+    this.editMode = false;
+  }
+
+  bookColor(i: number): string {
+    return ['#4a90d9', '#5cb87a', '#e07b3a'][i % 3];
+  }
+
+  protected readonly Date = Date;
+
+  getBookByReviewId(id: number) : Observable<Book> {
+    return this.reviewService.getBookByReviewId(id).pipe()
+  };
+
+  // ─────────────────────────────────────────
+  //  DEMANDES -> for renew which we discarded / left one for example
+  // ─────────────────────────────────────────
+  private loadRequests(): void {
+    this.bookService.getAll().subscribe((books) => {
+      this.requests = [
+        {
+          id: 1,
+          user: 'Sophie Martin',
+          book: books[1],
+          type: 'emprunt',
+          requestDate: new Date('2026-05-10'),
+          status: 'pending',
+        },
+      ];
+    });
+  }
+  get filteredRequests(): BorrowRequest[] {
+    return this.requestFilter === 'all'
+      ? this.requests
+      : this.requests.filter((r) => r.type === this.requestFilter);
+  }
+
+  get pendingCount(): number {
+    return this.requests.filter((r) => r.status === 'pending').length;
+  }
+
+  approveRequest(req: BorrowRequest): void {
+    req.status = 'approved';
+    this.requests = [...this.requests];
+  }
+
+  rejectRequest(req: BorrowRequest): void {
+    req.status = 'rejected';
+    this.requests = [...this.requests];
+  }
+
+  // ─────────────────────────────────────────
+  //  RETARDS
+  // ─────────────────────────────────────────
+  private loadLateReturns(): void {
+    this.lateReturns$ = this.loanService.getLate().pipe(
+      map((loans) =>
+        loans.map((loan) => ({
+          id: loan.id,
+          id_livre: loan.livreId,
+          id_utilisateur: loan.utilisateurId,
+
+          date_emprunt: new Date(loan.dateEmprunt),
+          date_retour_prevu: new Date(loan.dateRetourPrevu),
+          date_retour_effectif: loan.dateRetourEffectif ? new Date(loan.dateRetourEffectif) : null,
+
+          daysLeft: this.calculateDaysLeft(loan.dateRetourPrevu),
+          isLate: this.calculateDaysLeft(loan.dateRetourPrevu) < 0,
+
+          // données enrichies
+          book: this.books.find((b) => b.id === loan.livreId)!,
+        })),
+      ),
+    );
+  }
+
+  get lateCount(): Observable<number> {
+    this.lateCount$ = this.lateReturns$.pipe(map((loans) => loans.length));
+    return this.lateCount$;
+  }
+
+  // sendReminder(late: Observable<Loan>): void {
+  //   late.reminderSent = true;
+  //   this.lateReturns = [...this.lateReturns];
+  //   // appel API email
+  // }
+
+  markReturned(late$: LoanView): void {
+    this.loanService.return(late$.id);
+  }
+
+  // ─────────────────────────────────────────
+  //  AVIS
+  // ─────────────────────────────────────────
+  private loadReviews(): void {
+    this.reviewService.getAll();
+    // this.bookService.getAll().subscribe((books) => {
+    //   this.reviews = [
+    //     {
+    //       id: 1,
+    //       user: 'Sophie M.',
+    //       book: books[0],
+    //       title: 'Un classique incontournable',
+    //       body: "Don Quichotte reste une lecture fascinante, pleine d'humour et de profondeur. Je recommande vivement !",
+    //       rating: 5,
+    //       date: new Date('2026-05-10'),
+    //       status: 'pending',
+    //     },
+    //     {
+    //       id: 2,
+    //       user: 'Marc D.',
+    //       book: books[6],
+    //       title: 'Trop prévisible',
+    //       body: "Honnêtement, j'ai trouvé l'intrigue assez cousue de fil blanc. Pas le meilleur McFadden.",
+    //       rating: 2,
+    //       date: new Date('2026-05-09'),
+    //       status: 'pending',
+    //     },
+    //     {
+    //       id: 3,
+    //       user: 'Lucie P.',
+    //       book: books[14],
+    //       title: 'Orwell visionnaire',
+    //       body: 'Relire 1984 en 2026 est saisissant. Chaque page résonne avec notre époque. Un must absolu.',
+    //       rating: 5,
+    //       date: new Date('2026-05-08'),
+    //       status: 'pending',
+    //     },
+    //     {
+    //       id: 4,
+    //       user: 'Inès K.',
+    //       book: books[3],
+    //       title: 'Guide utile et drôle',
+    //       body: "Facile m'a redonné le sourire. Des conseils concrets emballés dans un humour bienveillant.",
+    //       rating: 4,
+    //       date: new Date('2026-05-07'),
+    //       status: 'approved',
+    //     },
+    //     {
+    //       id: 5,
+    //       user: 'Emma B.',
+    //       book: books[1],
+    //       title: 'Magique',
+    //       body: "Alice est un voyage vers l'imaginaire pur. Lewis Carroll était un génie.",
+    //       rating: 5,
+    //       date: new Date('2026-05-06'),
+    //       status: 'approved',
+    //     },
+    //     {
+    //       id: 6,
+    //       user: 'Paul M.',
+    //       book: books[7],
+    //       title: 'Contenu inapproprié !!',
+    //       body: "Ce livre est une arnaque totale, l'auteur est un imposteur et ce roman ne devrait pas exister dans cette biblio !",
+    //       rating: 1,
+    //       date: new Date('2026-05-05'),
+    //       status: 'rejected',
+    //     },
+    //   ];
+    // });
+  }
+
+  get filteredReviews(): AdminReview[] {
+    return this.reviewFilter === 'all'
+      ? this.reviews
+      : this.reviews.filter((r) => r.status === this.reviewFilter);
+  }
+
+  get pendingReviewCount(): number {
+    return this.reviews.filter((r) => r.status === 'pending').length;
+  }
+
+  approveReview(review: AdminReview): void {
+    review.status = 'approved';
+    this.reviews = [...this.reviews];
+  }
+
+  rejectReview(review: AdminReview): void {
+    review.status = 'rejected';
+    this.reviews = [...this.reviews];
+  }
+
+  starsArray(rating: number): boolean[] {
+    return Array.from({ length: 5 }, (_, i) => i < rating);
+  }
+
+  // ─────────────────────────────────────────
+  //  STATISTIQUES
+  // ─────────────────────────────────────────
+  private loadStats(): void {
+    this.bookService.getAll().subscribe((books) => {
+      const available = books.filter((b) => b.quantite > 0).length;
+      const borrowed = books.length - available;
+
+      this.stats = [
+        { label: 'Livres total', value: books.length, icon: '📚' },
+
+        {
+          label: 'Disponibles',
+          value: available,
+          icon: '✅',
+          sub: `${Math.round((available / books.length) * 100)}% du catalogue`,
+        },
+
+        {
+          label: 'Empruntés',
+          value: borrowed,
+          icon: '📖',
+          sub: `${Math.round((borrowed / books.length) * 100)}% du catalogue`,
+        },
+
+        {
+          label: 'Retards en cours',
+          value: Number(this.lateCount$),
+          icon: '⏰',
+          sub: 'livres non retournés',
+        },
+
+        {
+          label: 'Emprunts ce mois',
+          value: 0,
+          icon: '📅',
+          sub: '+12% vs mois dernier',
+        },
+
+        {
+          label: 'Membres actifs',
+          value: 'user active count',
+          icon: '👥',
+          sub: 'get all users length',
+        },
+
+        {
+          label: 'Avis en attente',
+          value: this.pendingReviewCount,
+          icon: '💬',
+        },
+
+        {
+          label: 'Demandes en attente',
+          value: this.pendingCount,
+          icon: '📋',
+        },
+      ];
+
+      // Top 10 mieux notés
+      this.topRated = [...books].sort((a, b) => b.note - a.note).slice(0, 10);
+
+      // Top 10 plus empruntés
+      this.topBorrowed = [...books]
+        .sort((a, b) => (b.quantite ? 0 : 1) - (a.quantite ? 0 : 1) || b.note - a.note)
+        .slice(0, 10);
+
+      // Répartition par genre
+      const genreMap = new Map<string, number>();
+
+      books.forEach((b) => genreMap.set(b.categorie, (genreMap.get(b.categorie) ?? 0) + 1));
+
+      const total = [...genreMap.values()].reduce((s, v) => s + v, 0);
+
+      this.genreStats = [...genreMap.entries()]
+        .map(([genre, count]) => ({
+          genre,
+          count,
+          pct: Math.round((count / total) * 100),
+        }))
+        .sort((a, b) => b.count - a.count);
+    });
+  }
+
+  setTab(tab: AdminTab): void {
+    this.activeTab = tab;
+  }
+
+  // ─────────────────────────────────────────
+  //  CATALOGUE (libraire & admin)
+  // ─────────────────────────────────────────
+  catalogueBooks: Book[] = [];
+  showAddForm = false;
+  deleteConfirmId: number | null = null;
+  catalogueSuccess = '';
+  catalogueError = '';
+
+  newBook: Omit<Book, 'id'> = {
+    titre: '',
+    auteur: '',
+    resume: '',
+    categorie: '',
+    note: 0,
+    quantite: 0,
+    date_ajout: new Date('2026-05-05'),
+    isbn: '',
+  };
+  newBookGenresRaw = ''; // saisie libre séparée par virgules
+
+  private loadCatalogue(): void {
+    this.bookService.getAll().subscribe((books) => {
+      this.catalogueBooks = books;
+    });
+  }
+
+  onAddBook(): void {
+    this.catalogueError = '';
+
+    if (!this.newBook.titre.trim() || !this.newBook.auteur.trim()) {
+      this.catalogueError = 'Titre et auteur sont obligatoires.';
+      return;
+    }
+
+    const genres = this.newBookGenresRaw;
+
+    this.bookService.addBook({ ...this.newBook, categorie: genres }).subscribe((book) => {
+      // message succès avec vrai Book
+      this.catalogueSuccess = `"${book.titre}" ajouté avec succès.`;
+
+      // reload catalogue
+      this.bookService.getAll().subscribe((books) => {
+        this.catalogueBooks = books;
+      });
+
+      this.showAddForm = false;
+      this.resetNewBook();
+
+      setTimeout(() => (this.catalogueSuccess = ''), 4000);
+    });
+  }
+
+  onDeleteBook(id: number): void {
+    this.bookService.deleteBook(id);
+    this.bookService.getAll().subscribe((books) => {
+      this.catalogueBooks = books;
+    });
+    this.deleteConfirmId = null;
+  }
+
+  //  TODO change to setQuantity with +1 or -1 if returned or borrowed
+  setBorrowQuantity(book: Book): void {
+    if (book.quantite > 0) {
+      book.quantite = book.quantite - 1;
+    }
+  }
+
+  setReturnQuantity(book: Book): void {
+    book.quantite = book.quantite + 1;
+  }
+
+  private resetNewBook(): void {
+    this.newBook = {
+      titre: '',
+      auteur: '',
+      resume: '',
+      categorie: '',
+      note: 0,
+      quantite: 1,
+      date_ajout: new Date(),
+      isbn: '',
+    };
+    this.newBookGenresRaw = '';
+  }
+
+  // ─────────────────────────────────────────
+  //  UTILISATEURS (admin only)
   // ─────────────────────────────────────────
   users: User[] = [];
   userSearch = '';
@@ -124,166 +564,58 @@ export class MySpaceAdminComponent implements OnInit {
     return this.users.filter(
       (u) =>
         !q ||
-        u.firstName.toLowerCase().includes(q) ||
-        u.lastName.toLowerCase().includes(q) ||
+        u.prenom.toLowerCase().includes(q) ||
+        u.nom.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q),
     );
   }
 
   private loadUsers(): void {
-    this.users = this.authService.getAllUsers();
+    this.authService.getAllUsers().subscribe({
+      next: (users) => (this.users = users),
+      error: () => (this.userError = 'Impossible de charger les utilisateurs.'),
+    });
   }
 
   onRoleChange(user: User, event: Event): void {
     const newRole = Number((event.target as HTMLSelectElement).value) as UserRole;
-    const result = this.authService.updateUserRole(user.id, newRole);
-
-    if (result.success) {
-      this.loadUsers();
-      this.userSuccess = `Rôle de ${user.firstName} mis à jour.`;
-      setTimeout(() => (this.userSuccess = ''), 3000);
-    } else {
-      this.userError = result.error || 'Erreur lors de la modification.';
-      setTimeout(() => (this.userError = ''), 4000);
-    }
+    this.authService.updateUserRole(user.id, newRole).subscribe({
+      next: () => {
+        this.loadUsers();
+        this.userSuccess = `Rôle de ${user.prenom} mis à jour.`;
+        setTimeout(() => (this.userSuccess = ''), 3000);
+      },
+      error: (err: Error) => {
+        this.userError = err.message ?? 'Erreur lors de la modification du rôle.';
+        setTimeout(() => (this.userError = ''), 4000);
+      },
+    });
   }
 
   onDeleteUser(user: User): void {
-    if (confirm(`Supprimer le compte de ${user.firstName} ?`)) {
-      const result = this.authService.deleteUser(user.id);
-      if (result.success) {
+    this.authService.deleteUser(user.id).subscribe({
+      next: () => {
         this.loadUsers();
-        this.userSuccess = `Utilisateur supprimé.`;
+        this.userSuccess = `Compte de ${user.prenom} ${user.nom} supprimé.`;
         setTimeout(() => (this.userSuccess = ''), 3000);
-      } else {
-        this.userError = result.error || 'Suppression impossible.';
+      },
+      error: (err: Error) => {
+        this.userError = err.message ?? 'Erreur lors de la suppression.';
         setTimeout(() => (this.userError = ''), 4000);
-      }
-    }
+      },
+    });
   }
 
-  // ── Méthodes de chargement simulées (gardées pour ne pas casser le visuel) ──
-  private loadMyLoans(): void {
-    /* ... code de Camille ... */
-  }
-  private loadRequests(): void {
-    /* ... code de Camille ... */
-  }
-  private loadLateReturns(): void {
-    /* ... code de Camille ... */
-  }
-  private loadReviews(): void {
-    /* ... code de Camille ... */
-  }
-  private loadStats(): void {
-    /* ... code de Camille ... */
-  }
-  private loadCatalogue(): void {
-    this.catalogueBooks = this.bookService.getAll();
-  }
-
-  // ── Méthodes UI ──
-  setTab(tab: AdminTab): void {
-    this.activeTab = tab;
-  }
   getRoleBadgeClass(role: UserRole): string {
     return `role-badge role-${role}`;
   }
-  starsArray(rating: number): boolean[] {
-    return Array.from({ length: 5 }, (_, i) => i < rating);
-  }
 
-  // (Copie ici les méthodes onAddBook, onDeleteBook, etc. si tu en as besoin,
-  // elles n'utilisent pas le AuthService donc elles ne posent pas de problème)
-  catalogueBooks: Book[] = [];
-  showAddForm = false;
-  deleteConfirmId: number | null = null;
-  catalogueSuccess = '';
-  catalogueError = '';
-  newBook: Omit<Book, 'id'> = {
-    title: '',
-    author: '',
-    cover: '',
-    description: '',
-    genre: [],
-    rating: 0,
-    available: true,
-    date: new Date(),
-  };
-  newBookGenresRaw = '';
-  onAddBook(): void {
-    /* ... */
-  }
-  onDeleteBook(id: number): void {
-    /* ... */
-  }
-  toggleAvailability(book: Book): void {
-    /* ... */
-  }
-  private resetNewBook(): void {
-    /* ... */
-  }
-  onEditToggle(): void {
-    this.userEdit = { ...this.user };
-    this.editMode = true;
-  }
-  onSave(): void {
-    this.user = { ...this.userEdit };
-    this.editMode = false;
-  }
-  onCancel(): void {
-    this.editMode = false;
-  }
-  bookColor(i: number): string {
-    return ['#4a90d9', '#5cb87a', '#e07b3a'][i % 3];
-  }
-  getLoanStatus(loan: Loan): 'late' | 'urgent' | 'ok' {
-    return loan.isLate ? 'late' : loan.daysLeft <= 5 ? 'urgent' : 'ok';
-  }
-  getLoanLabel(loan: Loan): string {
-    return loan.isLate ? 'En retard' : `J-${loan.daysLeft}`;
-  }
-  onRenewMyLoan(loan: Loan): void {
-    /* ... */
-  }
-  onReturnMyLoan(loan: Loan): void {
-    this.myLoans = this.myLoans.filter((l) => l.id !== loan.id);
-  }
-  approveRequest(req: BorrowRequest): void {
-    req.status = 'approved';
-  }
-  rejectRequest(req: BorrowRequest): void {
-    req.status = 'rejected';
-  }
-  sendReminder(late: LateReturn): void {
-    late.reminderSent = true;
-  }
-  markReturned(late: LateReturn): void {
-    this.lateReturns = this.lateReturns.filter((l) => l.id !== late.id);
-  }
-  approveReview(review: AdminReview): void {
-    review.status = 'approved';
-  }
-  rejectReview(review: AdminReview): void {
-    review.status = 'rejected';
-  }
-  get filteredRequests(): BorrowRequest[] {
-    return this.requestFilter === 'all'
-      ? this.requests
-      : this.requests.filter((r) => r.type === this.requestFilter);
-  }
-  get pendingCount(): number {
-    return this.requests.filter((r) => r.status === 'pending').length;
-  }
-  get lateCount(): number {
-    return this.lateReturns.length;
-  }
-  get filteredReviews(): AdminReview[] {
-    return this.reviewFilter === 'all'
-      ? this.reviews
-      : this.reviews.filter((r) => r.status === this.reviewFilter);
-  }
-  get pendingReviewCount(): number {
-    return this.reviews.filter((r) => r.status === 'pending').length;
+  private calculateDaysLeft(dateRetourPrevu: string): number {
+    const today = new Date().getTime();
+    const returnDate = new Date(dateRetourPrevu).getTime();
+
+    const diffMs = returnDate - today;
+
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   }
 }
